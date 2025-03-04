@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<klayout-macro>
+ <description/>
+ <version/>
+ <category>drc</category>
+ <prolog/>
+ <epilog/>
+ <doc/>
+ <autorun>false</autorun>
+ <autorun-early>false</autorun-early>
+ <shortcut/>
+ <show-in-menu>true</show-in-menu>
+ <group-name>drc_scripts</group-name>
+ <menu-path>tools_menu.drc.end</menu-path>
+ <interpreter>dsl</interpreter>
+ <dsl-interpreter-name>drc-dsl-xml</dsl-interpreter-name>
+ <text>#CORNERSTONE Proprietary
+#Released: 15/01/2025
+#Version: 1.0 for 2024-2025 academic year
+#Author: Emre Kaplan
+#Report any issue to cornerstone@soton.ac.uk
+#Technology Platform: 220nm Silicon-on-Insulator
+
+
+# Use a tile size of 20mm
+tiles(5.mm)
+# Use 4 threads
+threads(4)
+
+design_area = 6000.0.um*3000.0.um
+
+max_feature_length_etch1 = 20.01.um
+min_feature_size_etch1_dark = 0.20.um
+min_feature_size_etch1_light = 0.30.um
+
+
+max_area_etch1 = max_feature_length_etch1*min_feature_size_etch1_dark.um2
+
+
+angle_lim= 15
+
+report ('DRC_SOI')
+
+
+#GDS layers 
+
+
+#SOI Etch 1 - Light field (GDS 3)
+soi_etch1_light_layer = input(3, 0)
+
+#SOI Etch 1 - Dark field (GDS 4)
+soi_etch1_dark_layer = input(4, 0)
+
+#Label (GDS 100)
+label = input(100,0)
+
+#Cell Outline (Design area) (GDS 99)
+cell = input(99, 0)
+
+
+design_grid = 0.001
+layers.each { |layer|  input(layer).ongrid(design_grid).output("#{layer.to_s} grid violations")}
+
+
+#Check correct design area is used
+cell.without_area(design_area).output("Correct desing area violation")
+
+
+# Minimum feature size etch1 for light fields
+soi_etch1_light_layer.width(0.30, angle_limit(angle_lim)).without_area(0.0.um2..max_area_etch1).output("Minimum feature size violation (GDS3 &lt; 300 nm and shorter than &lt; max. length)")
+soi_etch1_light_layer.width(0.25, angle_limit(angle_lim)).output("Minimum feature size violation (GDS3 &lt; 250 nm)")
+
+# Minimum gap etch1 for light fields
+soi_etch1_dark_layer.space(0.20, angle_limit(angle_lim)).output("Minimum gap violation (GDS3 &lt; 200 nm)")
+
+# Minimum feature size etch1 for dark fields
+soi_etch1_dark_layer.width(0.20, angle_limit(angle_lim)).output("Minimum feature size violation (GDS4 &lt; 200 nm)")
+
+
+# Minimum gap for etch1 for dark fields
+soi_etch1_dark_layer.space(0.30, angle_limit(angle_lim)).without_area(0.0.um2..max_area_etch1).output("Minimum gap violation (GDS4 &lt; 300 nm and shorter than &lt; max. length)")
+soi_etch1_dark_layer.space(0.25, angle_limit(angle_lim)).output("Minimum gap violation (GDS4 &lt; 250 nm)")
+
+
+
+# Minimum feature size for Labels
+label.width(0.25, angle_limit(angle_lim)).output("Minimum width violation (GDS100 &lt; 250 nm)")
+
+# Minimum gap for Labels
+label.space(0.25, angle_limit(angle_lim)).output("Minimum gap violation (GDS100 &lt; 250 nm)")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</text>
+</klayout-macro>
