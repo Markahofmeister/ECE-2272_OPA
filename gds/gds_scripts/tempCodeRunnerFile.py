@@ -1,1 +1,2 @@
-c2 << 
+top.plot()
+top.show()
