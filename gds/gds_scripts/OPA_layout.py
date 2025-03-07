@@ -7,8 +7,8 @@ import math
 
 # DESIGN PARAMETERS
 wavelength = 1.55                       # um    
-numElements = 8                         # Number of radiating elements
-separationScalar = 50                   # Should be ~1.2              
+numElements = 64                         # Number of radiating elements
+separationScalar = 10                   # Should be ~1.2              
 elementSeparation = wavelength * separationScalar    # Separation between radiating elements 
 die_width = 3000.0                       # um
 die_height = 3000.0                      # um
@@ -98,18 +98,18 @@ for stage in range( numStages ):
         rg = round( (numElements * 2) / divisor)
         for i in range( rg ):
             if(i % 2 == 0):
-                gf.routing.route_single(pdiv, port1=splitters[stage][int(i/2)].ports['o2'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs)
+                gf.routing.route_single(pdiv, port1=splitters[stage][int(i/2)].ports['o2'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs, radius=10.0)
             else:
-                gf.routing.route_single(pdiv, port1=splitters[stage][int(i/2)].ports['o3'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs)
+                gf.routing.route_single(pdiv, port1=splitters[stage][int(i/2)].ports['o3'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs, radius=10.0)
             
 
 top << pdiv
 
 for i in range(numElements):
     if(i % 2 == 0):
-        gf.routing.route_single(top, port1=splitters[0][int(i/2)].ports['o2'], port2=radiatingElements[i].ports['o1'], cross_section=xs)
+        gf.routing.route_single(top, port1=splitters[0][int(i/2)].ports['o2'], port2=radiatingElements[i].ports['o1'], cross_section=xs, radius=10.0)
     else:
-        gf.routing.route_single(top, port1=splitters[0][int(i/2)].ports['o3'], port2=radiatingElements[i].ports['o1'], cross_section=xs)
+        gf.routing.route_single(top, port1=splitters[0][int(i/2)].ports['o3'], port2=radiatingElements[i].ports['o1'], cross_section=xs, radius=10.0)
 
 
 
