@@ -7,13 +7,14 @@ import math
 
 # DESIGN PARAMETERS
 wavelength = 1.55                       # um    
-numElements = 64                         # Number of radiating elements
-separationScalar = 10                   # Should be ~1.2              
+numElements = 128                         # Number of radiating elements
+separationScalar = 7                   # Should be ~1.2              
 elementSeparation = wavelength * separationScalar    # Separation between radiating elements 
 die_width = 3000.0                       # um
 die_height = 3000.0                      # um
-splitter_Xsep = 200                      # X separation between splitter stages, um
+splitter_Xsep = 150                      # X separation between splitter stages, um
 xMargin = 500                            # distance from x boundary to place elements, um
+bendRad_min = 10
 
 # Max. separation between outer radiating elementsa
 ysepMax = elementSeparation * (numElements - 1)    
@@ -98,20 +99,43 @@ for stage in range( numStages ):
         rg = round( (numElements * 2) / divisor)
         for i in range( rg ):
             if(i % 2 == 0):
-                gf.routing.route_single(pdiv, port1=splitters[stage][int(i/2)].ports['o2'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs, radius=10.0)
+                gf.routing.route_dubin(pdiv, port1=splitters[stage][int(i/2)].ports['o2'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs)
             else:
-                gf.routing.route_single(pdiv, port1=splitters[stage][int(i/2)].ports['o3'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs, radius=10.0)
+                gf.routing.route_dubin(pdiv, port1=splitters[stage][int(i/2)].ports['o3'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs)
             
 
 top << pdiv
 
+# Route final splitter stage to radiating elements 
 for i in range(numElements):
     if(i % 2 == 0):
-        gf.routing.route_single(top, port1=splitters[0][int(i/2)].ports['o2'], port2=radiatingElements[i].ports['o1'], cross_section=xs, radius=10.0)
+        gf.routing.route_dubin(top, port1=splitters[0][int(i/2)].ports['o2'], port2=radiatingElements[i].ports['o1'], cross_section=xs)
     else:
-        gf.routing.route_single(top, port1=splitters[0][int(i/2)].ports['o3'], port2=radiatingElements[i].ports['o1'], cross_section=xs, radius=10.0)
+        gf.routing.route_dubin(top, port1=splitters[0][int(i/2)].ports['o3'], port2=radiatingElements[i].ports['o1'], cross_section=xs)
 
+# ports_1 = []
+# ports_2 = []
+# for i in range(numElements):
+#     ports_1.append(radiatingElements[i].ports['o1'])
+#     if(i % 2 == 0):
+#         ports_2.append(splitters[0][int(i/2)].ports['o2'])
+#     else:
+#         ports_2.append(splitters[0][int(i/2)].ports['o3'])
 
+# gf.routing.route_bundle_all_angle(top, ports1=ports_1, ports2=ports_2, cross_section=xs, bend=)
+
+# Input Grating Coupler
+gIn = gf.Component('gratingIn')
+
+# Position Input Grating Coupler
+gratingIn = gIn << fgc
+mov = (die_width / 2) - xMargin - (splitter_Xsep * (numStages + 1) - (splitter_Xsep / 2))
+gratingIn.rotate(180.0)
+gratingIn.movex(mov)
+
+# Add to top and route waveguide
+top << gIn
+gf.routing.route_single(top, port1=gratingIn.ports['o1'], port2=splitters[numStages - 1][0].ports['o1'], cross_section=xs)
 
 top.plot()
 top.show()

@@ -1,6 +1,6 @@
 import numpy as np
 import gdsfactory as gf
-import gdsfactory.components as pd
+import gdsfactory.components as pdk
 
 c = gf.Component()
 
