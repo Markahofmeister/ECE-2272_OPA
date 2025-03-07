@@ -8,7 +8,7 @@ import math
 # DESIGN PARAMETERS
 wavelength = 1.55                       # um    
 numElements = 8                         # Number of radiating elements
-separationScalar = 100                   # Should be ~1.2              
+separationScalar = 50                   # Should be ~1.2              
 elementSeparation = wavelength * separationScalar    # Separation between radiating elements 
 die_width = 3000.0                       # um
 die_height = 3000.0                      # um
@@ -75,27 +75,43 @@ numStages = round(np.log2(numElements))
 # List of lists of MMI splitters
 splitters = []
 
+# Generate, place, and route N = log2(numElements) MMI splitters 
 for stage in range( numStages ):
 
     temp_splitters = []
 
     divisor = 2**(stage + 1)
+
+    # Generate and place MMI splitters for stage M 
     for i in range( round( numElements / divisor ) ):
 
         temp_splitters.insert(i, pdiv << mmi1x2)
         temp_splitters[i].movex( (die_width / 2) - xMargin - (splitter_Xsep * (stage + 1)) )
         temp_splitters[i].movey( (ysepMax / 2) - ((divisor-1) * (elementSeparation / 2)) - (elementSeparation * i * divisor) )
 
+    # Add stage M of splitters to master MMI splitter list 
     splitters.append(temp_splitters)
 
+    # If we are not on the stage that connects to the bragg gratings, 
+    # draw the connections betweem gratings 
+    if(stage != 0):
+        rg = round( (numElements * 2) / divisor)
+        for i in range( rg ):
+            if(i % 2 == 0):
+                gf.routing.route_single(pdiv, port1=splitters[stage][int(i/2)].ports['o2'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs)
+            else:
+                gf.routing.route_single(pdiv, port1=splitters[stage][int(i/2)].ports['o3'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs)
+            
 
 top << pdiv
 
+for i in range(numElements):
+    if(i % 2 == 0):
+        gf.routing.route_single(top, port1=splitters[0][int(i/2)].ports['o2'], port2=radiatingElements[i].ports['o1'], cross_section=xs)
+    else:
+        gf.routing.route_single(top, port1=splitters[0][int(i/2)].ports['o3'], port2=radiatingElements[i].ports['o1'], cross_section=xs)
 
-# gf.routing.route_single(top, port1=splitters[0][0].ports['o2'], port2=radiatingElements[0].ports['o1'], cross_section=xs)
-# gf.routing.route_single(top, port1=splitters[0][0].ports['o3'], port2=radiatingElements[1].ports['o1'], cross_section=xs)
-# gf.routing.route_single(top, port1=splitters[0][1].ports['o2'], port2=radiatingElements[2].ports['o1'], cross_section=xs)
-# gf.routing.route_single(top, port1=splitters[0][1].ports['o3'], port2=radiatingElements[3].ports['o1'], cross_section=xs)
+
 
 top.plot()
 top.show()
