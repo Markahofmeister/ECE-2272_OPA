@@ -331,11 +331,13 @@ def place_dubin_path_meander(
     """
     c = component
     current_position = port1
+    loopCount = 0            
 
     instances: list[kf.VInstance] = []
 
     for mode, length, radius in solution:
         if mode == "L":
+
             # Length and radius are in um, convert to nm for gdsfactory
             arc_angle = 180 * length / (m.pi * radius)
             bend = c.create_vinst(
@@ -361,16 +363,14 @@ def place_dubin_path_meander(
             )
             straight.connect("o1", current_position)
             current_position = straight.ports["o2"]
-            # instances.append(straight)
+            instances.append(straight)
 
-            arc1 = 
-
-            straight2 = c.create_vinst(
-                straight_all_angle(length=length / 2, cross_section=xs)
-            )
-            straight2.connect("o1", current_position)
-            current_position = straight2.ports["o2"]
-            instances.append(straight2)
+            # straight2 = c.create_vinst(
+            #     straight_all_angle(length=length / 2, cross_section=xs)
+            # )
+            # straight2.connect("o1", current_position)
+            # current_position = straight2.ports["o2"]
+            # instances.append(straight2)
 
 
              # arc_angle = 90
@@ -378,10 +378,10 @@ def place_dubin_path_meander(
             #     bend_circular_all_angle(angle=arc_angle, cross_section=xs)
             # )
 
-
-
         else:
             raise ValueError(f"Invalid mode: {mode}")
+        
+        loopCount = loopCount + 1
 
     return instances
 
