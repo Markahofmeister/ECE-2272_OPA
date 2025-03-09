@@ -34,21 +34,19 @@ def route_dubin_OPA(
     x1, y1 = port1.center
     angle1 = float(port1.orientation)
     START = (x1, y1, angle1)  # Convert to um
-    # print("Start: " + str(START))
 
     # Get end position and orientation
     x2, y2 = port2.center
     angle2 = float(port2.orientation)
     angle2 = (angle2 + 180) % 360  # Adjust for input connection
     END = (x2, y2, angle2)  # Convert to um
-    # print("End: " + str(END))
 
     xs = gf.get_cross_section(cross_section)
     # Find the Dubin's path between ports using radius from cross-section
-    path = dubins_path(start=START, end=END, cross_section=xs)  # Convert radius to um
+    path = dubins_path_meander(start=START, end=END, cross_section=xs, deltaL = 10)  # Convert radius to um
     instances = place_dubin_path_meander(component, xs, port1, solution=path, deltaL = 10)
     length = dubins_path_length(START, END, xs)
-    print(length)
+    # print(length)
 
     backbone = [gf.kdb.DPoint(x1, y1), gf.kdb.DPoint(x2, y2)]  # TODO: fix this
     return OpticalAllAngleRoute(
@@ -331,13 +329,11 @@ def place_dubin_path_meander(
     """
     c = component
     current_position = port1
-    loopCount = 0            
 
     instances: list[kf.VInstance] = []
 
     for mode, length, radius in solution:
         if mode == "L":
-
             # Length and radius are in um, convert to nm for gdsfactory
             arc_angle = 180 * length / (m.pi * radius)
             bend = c.create_vinst(
@@ -357,33 +353,94 @@ def place_dubin_path_meander(
             instances.append(bend)
 
         elif mode == "S":
-            
             straight = c.create_vinst(
-                straight_all_angle(length=length / 2, cross_section=xs)
+                # straight_all_angle(length=length - (deltaL), cross_section=xs)
+                straight_all_angle(length=length - (deltaL * 2.474), cross_section=xs)
             )
             straight.connect("o1", current_position)
             current_position = straight.ports["o2"]
             instances.append(straight)
 
-            # straight2 = c.create_vinst(
-            #     straight_all_angle(length=length / 2, cross_section=xs)
-            # )
-            # straight2.connect("o1", current_position)
-            # current_position = straight2.ports["o2"]
-            # instances.append(straight2)
-
-
-             # arc_angle = 90
-            # bend = c.create_vinst(
-            #     bend_circular_all_angle(angle=arc_angle, cross_section=xs)
-            # )
-
         else:
             raise ValueError(f"Invalid mode: {mode}")
-        
-        loopCount = loopCount + 1
 
     return instances
+
+def dubins_path_meander(
+    start: tuple[float, float, float],
+    end: tuple[float, float, float],
+    cross_section: CrossSectionSpec,
+    deltaL: float
+) -> list[tuple[str, float, float]]:
+    """Finds the Dubins path between two points."""
+    xs = gf.get_cross_section(cross_section)
+    (sx, sy, syaw) = start  # Coordinates already in um
+    (ex, ey, eyaw) = end  # Coordinates already in um
+
+    # Convert angles to radians
+    syaw = m.radians(syaw)
+    eyaw = m.radians(eyaw)
+
+    # Use radius in um
+    c = xs.radius  # Already converted to um
+
+    assert c is not None, "Cross-section radius is None"
+
+    # Calculate relative end position
+    ex = ex - sx
+    ey = ey - sy
+
+    # Transform to local coordinates
+    lex = m.cos(syaw) * ex + m.sin(syaw) * ey
+    ley = -m.sin(syaw) * ex + m.cos(syaw) * ey
+    leyaw = eyaw - syaw
+
+    # Calculate normalized distance
+    D = m.sqrt(lex**2.0 + ley**2.0)
+    d = D / c  # Normalize by radius
+
+    # Calculate angles for path planning
+    theta = mod_to_pi(m.atan2(ley, lex))
+    alpha = mod_to_pi(-theta)
+    beta = mod_to_pi(leyaw - theta)
+
+    # Find best path
+    planners = ["LSL", "RSR", "LSR", "RSL", "RLR", "LRL"]
+    bcost = float("inf")
+    bt, bp, bq, bmode = None, None, None, None
+
+    for planner in planners:
+        solution = general_planner(planner, alpha, beta, d)
+        if solution is None:
+            continue
+        (path, mode, cost) = solution
+        (t, p, q) = path
+        if bcost > cost:
+            bt, bp, bq, bmode = t, p, q, mode
+            bcost = cost
+
+    assert bt is not None and bp is not None and bq is not None and bmode is not None
+
+    # Return path segments with lengths in um
+    if bmode[0] == 'L':             # If LSR
+        bmode.insert(1, 'L')
+        bmode.insert(2, 'R')
+        bmode.insert(4, 'R')
+        bmode.insert(5, 'L')
+    elif bmode[0] == 'R':           # If RSL
+        bmode.insert(1, 'R')
+        bmode.insert(2, 'L')
+        bmode.insert(4, 'L')
+        bmode.insert(5, 'R')
+
+    # bt, bp, bq must be arc angle in radians? 
+    # Multiplying by arc radius gives us path length.
+
+    arcLength = deltaL / 4
+
+    list_ret =  list( zip( bmode, [bt * c, arcLength, arcLength, bp * c, arcLength, arcLength, bq * c], [c, 10, 10, c, 10, 10, c] ) )
+    # print(list_ret)
+    return list_ret
 
 
 if __name__ == "__main__":
