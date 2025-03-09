@@ -8,7 +8,7 @@ from routeDubin_OPA import route_dubin_OPA
 
 # DESIGN PARAMETERS
 wavelength = 1.55                       # um    
-numElements = 64                         # Number of radiating elements
+numElements = 8                         # Number of radiating elements
 separationScalar = 7                   # Should be ~1.2              
 elementSeparation = wavelength * separationScalar    # Separation between radiating elements 
 die_width = 3000.0                       # um
@@ -18,8 +18,7 @@ xMargin = 500                            # distance from x boundary to place ele
 bendRad_min = 10
 
 lengthDiff = 0.200                          # um, between arms 
-maxDiff = (numElements - 1) * lengthDiff    # Max. length difference to be seen between outer arms
-print(maxDiff)    
+maxDiff = (numElements - 1) * lengthDiff    # Max. length difference to be seen between outer arms  
 
 # Max. separation between outer radiating elementsa
 ysepMax = elementSeparation * (numElements - 1)    

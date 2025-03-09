@@ -34,18 +34,21 @@ def route_dubin_OPA(
     x1, y1 = port1.center
     angle1 = float(port1.orientation)
     START = (x1, y1, angle1)  # Convert to um
+    # print("Start: " + str(START))
 
     # Get end position and orientation
     x2, y2 = port2.center
     angle2 = float(port2.orientation)
     angle2 = (angle2 + 180) % 360  # Adjust for input connection
     END = (x2, y2, angle2)  # Convert to um
+    # print("End: " + str(END))
 
     xs = gf.get_cross_section(cross_section)
     # Find the Dubin's path between ports using radius from cross-section
     path = dubins_path(start=START, end=END, cross_section=xs)  # Convert radius to um
-    instances = place_dubin_path(component, xs, port1, solution=path)
+    instances = place_dubin_path_meander(component, xs, port1, solution=path, deltaL = 10)
     length = dubins_path_length(START, END, xs)
+    print(length)
 
     backbone = [gf.kdb.DPoint(x1, y1), gf.kdb.DPoint(x2, y2)]  # TODO: fix this
     return OpticalAllAngleRoute(
@@ -214,7 +217,9 @@ def dubins_path(
     assert bt is not None and bp is not None and bq is not None and bmode is not None
 
     # Return path segments with lengths in um
-    return list(zip(bmode, [bt * c, bp * c, bq * c], [c] * 3))
+    list_ret =  list(zip(bmode, [bt * c, bp * c, bq * c], [c] * 3))
+    # print(list_ret)
+    return list_ret
 
 
 def mod_to_pi(angle: float) -> float:
@@ -309,6 +314,77 @@ def place_dubin_path(
 
     return instances
 
+def place_dubin_path_meander(
+    component: Component,
+    xs: CrossSectionSpec,
+    port1: Port,
+    solution: list[tuple[str, float, float]],
+    deltaL: float
+) -> list[kf.VInstance]:
+    """Creates GDS component with Dubins path.
+
+    Args:
+        component: component to add the route to.
+        xs: cross-section.
+        port1: input port.
+        solution: Dubins path solution.
+    """
+    c = component
+    current_position = port1
+
+    instances: list[kf.VInstance] = []
+
+    for mode, length, radius in solution:
+        if mode == "L":
+            # Length and radius are in um, convert to nm for gdsfactory
+            arc_angle = 180 * length / (m.pi * radius)
+            bend = c.create_vinst(
+                bend_circular_all_angle(angle=arc_angle, cross_section=xs)
+            )
+            bend.connect("o1", current_position)
+            current_position = bend.ports["o2"]
+            instances.append(bend)
+
+        elif mode == "R":
+            arc_angle = -(180 * length / (m.pi * radius))
+            bend = c.create_vinst(
+                bend_circular_all_angle(angle=arc_angle, cross_section=xs)
+            )
+            bend.connect("o1", current_position)
+            current_position = bend.ports["o2"]
+            instances.append(bend)
+
+        elif mode == "S":
+            
+            straight = c.create_vinst(
+                straight_all_angle(length=length / 2, cross_section=xs)
+            )
+            straight.connect("o1", current_position)
+            current_position = straight.ports["o2"]
+            # instances.append(straight)
+
+            arc1 = 
+
+            straight2 = c.create_vinst(
+                straight_all_angle(length=length / 2, cross_section=xs)
+            )
+            straight2.connect("o1", current_position)
+            current_position = straight2.ports["o2"]
+            instances.append(straight2)
+
+
+             # arc_angle = 90
+            # bend = c.create_vinst(
+            #     bend_circular_all_angle(angle=arc_angle, cross_section=xs)
+            # )
+
+
+
+        else:
+            raise ValueError(f"Invalid mode: {mode}")
+
+    return instances
+
 
 if __name__ == "__main__":
     c = gf.Component()
@@ -322,7 +398,7 @@ if __name__ == "__main__":
     wg2.rotate(45)  # type: ignore
 
     # Route between the output of wg1 and input of wg2
-    route = route_dubin(
+    route = route_dubin_OPA(
         c,
         port1=wg1.ports["o2"],
         port2=wg2.ports["o1"],
