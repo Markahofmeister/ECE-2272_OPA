@@ -1,2 +1,2 @@
-top.plot()
-top.show()
+
+# Max. separation between outer radiating elementsa

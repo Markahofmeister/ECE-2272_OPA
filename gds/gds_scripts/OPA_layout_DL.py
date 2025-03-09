@@ -4,6 +4,7 @@ import gdsfactory.components as pdk
 import cornerstone_pdk as cs_pdk # type: ignore
 from gdsfactory.typings import ComponentSpec, CrossSectionSpec
 import math
+from routeDubin_OPA import route_dubin_OPA
 
 # DESIGN PARAMETERS
 wavelength = 1.55                       # um    
@@ -12,9 +13,13 @@ separationScalar = 7                   # Should be ~1.2
 elementSeparation = wavelength * separationScalar    # Separation between radiating elements 
 die_width = 3000.0                       # um
 die_height = 3000.0                      # um
-splitter_Xsep = 150                      # X separation between splitter stages, um
+splitter_Xsep = 130                      # X separation between splitter stages, um
 xMargin = 500                            # distance from x boundary to place elements, um
 bendRad_min = 10
+
+lengthDiff = 0.200                          # um, between arms 
+maxDiff = (numElements - 1) * lengthDiff    # Max. length difference to be seen between outer arms
+print(maxDiff)    
 
 # Max. separation between outer radiating elementsa
 ysepMax = elementSeparation * (numElements - 1)    
@@ -31,7 +36,8 @@ mmi1x2 = cs_pdk.mmi1x2_cornerstone_pdk()
 mmi2x2 = cs_pdk.mmi2x2_cornerstone_pdk()
 wgx = cs_pdk.crossing_cornerstone_pdk()
 
-
+# TODO
+# Calculate phase shift requirements along arms
 
 
 
@@ -99,9 +105,9 @@ for stage in range( numStages ):
         rg = round( (numElements * 2) / divisor)
         for i in range( rg ):
             if(i % 2 == 0):
-                gf.routing.route_dubin(pdiv, port1=splitters[stage][int(i/2)].ports['o2'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs)
+                route_dubin_OPA(pdiv, port1=splitters[stage][int(i/2)].ports['o2'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs)
             else:
-                gf.routing.route_dubin(pdiv, port1=splitters[stage][int(i/2)].ports['o3'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs)
+                route_dubin_OPA(pdiv, port1=splitters[stage][int(i/2)].ports['o3'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs)
             
 
 top << pdiv
@@ -109,9 +115,9 @@ top << pdiv
 # Route final splitter stage to radiating elements 
 for i in range(numElements):
     if(i % 2 == 0):
-        gf.routing.route_dubin(top, port1=splitters[0][int(i/2)].ports['o2'], port2=radiatingElements[i].ports['o1'], cross_section=xs)
+        route_dubin_OPA(top, port1=splitters[0][int(i/2)].ports['o2'], port2=radiatingElements[i].ports['o1'], cross_section=xs)
     else:
-        gf.routing.route_dubin(top, port1=splitters[0][int(i/2)].ports['o3'], port2=radiatingElements[i].ports['o1'], cross_section=xs)
+        route_dubin_OPA(top, port1=splitters[0][int(i/2)].ports['o3'], port2=radiatingElements[i].ports['o1'], cross_section=xs)
 
 # ports_1 = []
 # ports_2 = []
