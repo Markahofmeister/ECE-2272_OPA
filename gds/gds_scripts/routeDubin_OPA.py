@@ -21,6 +21,7 @@ def route_dubin_OPA(
     port1: Port,
     port2: Port,
     cross_section: CrossSectionSpec,
+    deltaL = float
 ) -> OpticalAllAngleRoute:
     """Route between ports using Dubins paths with radius from cross-section.
 
@@ -43,8 +44,8 @@ def route_dubin_OPA(
 
     xs = gf.get_cross_section(cross_section)
     # Find the Dubin's path between ports using radius from cross-section
-    path = dubins_path_meander(start=START, end=END, cross_section=xs, deltaL = 10)  # Convert radius to um
-    instances = place_dubin_path_meander(component, xs, port1, solution=path, deltaL = 10)
+    path = dubins_path_meander(start=START, end=END, cross_section=xs, deltaL = deltaL)  # Convert radius to um
+    instances = place_dubin_path_meander(component, xs, port1, solution=path, deltaL = deltaL)
     length = dubins_path_length(START, END, xs)
     # print(length)
 
@@ -355,7 +356,7 @@ def place_dubin_path_meander(
         elif mode == "S":
             straight = c.create_vinst(
                 # straight_all_angle(length=length - (deltaL), cross_section=xs)
-                straight_all_angle(length=length - (deltaL * 2.474), cross_section=xs)
+                straight_all_angle(length=(length - (deltaL)), cross_section=xs)
             )
             straight.connect("o1", current_position)
             current_position = straight.ports["o2"]

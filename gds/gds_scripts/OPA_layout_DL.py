@@ -104,9 +104,9 @@ for stage in range( numStages ):
         rg = round( (numElements * 2) / divisor)
         for i in range( rg ):
             if(i % 2 == 0):
-                route_dubin_OPA(pdiv, port1=splitters[stage][int(i/2)].ports['o2'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs)
+                route_dubin_OPA(pdiv, port1=splitters[stage][int(i/2)].ports['o2'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs, deltaL=10)
             else:
-                route_dubin_OPA(pdiv, port1=splitters[stage][int(i/2)].ports['o3'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs)
+                route_dubin_OPA(pdiv, port1=splitters[stage][int(i/2)].ports['o3'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs,  deltaL=20)
             
 
 top << pdiv
@@ -114,9 +114,9 @@ top << pdiv
 # Route final splitter stage to radiating elements 
 for i in range(numElements):
     if(i % 2 == 0):
-        route_dubin_OPA(top, port1=splitters[0][int(i/2)].ports['o2'], port2=radiatingElements[i].ports['o1'], cross_section=xs)
+        route_dubin_OPA(top, port1=splitters[0][int(i/2)].ports['o2'], port2=radiatingElements[i].ports['o1'], cross_section=xs,  deltaL=10)
     else:
-        route_dubin_OPA(top, port1=splitters[0][int(i/2)].ports['o3'], port2=radiatingElements[i].ports['o1'], cross_section=xs)
+        route_dubin_OPA(top, port1=splitters[0][int(i/2)].ports['o3'], port2=radiatingElements[i].ports['o1'], cross_section=xs,  deltaL=20)
 
 # ports_1 = []
 # ports_2 = []
