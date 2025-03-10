@@ -44,8 +44,10 @@ def route_dubin_OPA(
 
     xs = gf.get_cross_section(cross_section)
     # Find the Dubin's path between ports using radius from cross-section
-    path, linearDec = dubins_path_meander(start=START, end=END, cross_section=xs, deltaL = deltaL)  # Convert radius to um
-    instances = place_dubin_path_meander(component, xs, port1, solution=path, deltaL = deltaL, linearDecrease=linearDec)
+    # path, linearDec = dubins_path_meander(start=START, end=END, cross_section=xs, deltaL = deltaL)  # Convert radius to um
+    path = dubins_path(start=START, end=END, cross_section=xs)  # Convert radius to um
+    instances = place_dubin_path_meander(component, xs, port1, solution=path, deltaL = deltaL, linearDecrease=1)
+    # instances = place_dubin_path_meander(component, xs, port1, solution=path, deltaL = deltaL, linearDecrease=linearDec)
     length = dubins_path_length(START, END, xs)
     # print(length)
 
@@ -411,7 +413,7 @@ def dubins_path_meander(
     # print(p1)
     
 
-    list_ret =  list( zip( bmode, [bt * c, arcLength, arcLength, (bp * c) - linearDecrease, arcLength, arcLength, bq * c], [c, meander_radius, meander_radius, c, meander_radius, meander_radius, c] ) )
+    list_ret =  list( zip( bmode, [bt * c, arcLength, arcLength, (bp * c), arcLength, arcLength, bq * c], [c, meander_radius, meander_radius, c, meander_radius, meander_radius, c] ) )
     # print(list_ret)
     return list_ret, linearDecrease
 
@@ -459,7 +461,7 @@ def place_dubin_path_meander(
 
         elif mode == "S":
             straight = c.create_vinst(
-                straight_all_angle(length=(length), cross_section=xs)
+                straight_all_angle(length=(length - deltaL), cross_section=xs)
             )
             straight.connect("o1", current_position)
             current_position = straight.ports["o2"]

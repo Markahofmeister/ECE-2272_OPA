@@ -7,7 +7,7 @@ import math
 
 # DESIGN PARAMETERS
 wavelength = 1.55                       # um    
-numElements = 64                         # Number of radiating elements
+numElements = 32                         # Number of radiating elements
 separationScalar = 7                   # Should be ~1.2              
 elementSeparation = wavelength * separationScalar    # Separation between radiating elements 
 die_width = 3000.0                       # um
