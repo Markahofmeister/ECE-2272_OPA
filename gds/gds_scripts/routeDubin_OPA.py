@@ -44,8 +44,8 @@ def route_dubin_OPA(
 
     xs = gf.get_cross_section(cross_section)
     # Find the Dubin's path between ports using radius from cross-section
-    path = dubins_path_meander(start=START, end=END, cross_section=xs, deltaL = deltaL)  # Convert radius to um
-    instances = place_dubin_path_meander(component, xs, port1, solution=path, deltaL = deltaL)
+    path, linearDec = dubins_path_meander(start=START, end=END, cross_section=xs, deltaL = deltaL)  # Convert radius to um
+    instances = place_dubin_path_meander(component, xs, port1, solution=path, deltaL = deltaL, linearDecrease=linearDec)
     length = dubins_path_length(START, END, xs)
     # print(length)
 
@@ -313,59 +313,6 @@ def place_dubin_path(
 
     return instances
 
-def place_dubin_path_meander(
-    component: Component,
-    xs: CrossSectionSpec,
-    port1: Port,
-    solution: list[tuple[str, float, float]],
-    deltaL: float
-) -> list[kf.VInstance]:
-    """Creates GDS component with Dubins path.
-
-    Args:
-        component: component to add the route to.
-        xs: cross-section.
-        port1: input port.
-        solution: Dubins path solution.
-    """
-    c = component
-    current_position = port1
-
-    instances: list[kf.VInstance] = []
-
-    for mode, length, radius in solution:
-        if mode == "L":
-            # Length and radius are in um, convert to nm for gdsfactory
-            arc_angle = 180 * length / (m.pi * radius)
-            bend = c.create_vinst(
-                bend_circular_all_angle(angle=arc_angle, cross_section=xs)
-            )
-            bend.connect("o1", current_position)
-            current_position = bend.ports["o2"]
-            instances.append(bend)
-
-        elif mode == "R":
-            arc_angle = -(180 * length / (m.pi * radius))
-            bend = c.create_vinst(
-                bend_circular_all_angle(angle=arc_angle, cross_section=xs)
-            )
-            bend.connect("o1", current_position)
-            current_position = bend.ports["o2"]
-            instances.append(bend)
-
-        elif mode == "S":
-            straight = c.create_vinst(
-                # straight_all_angle(length=length - (deltaL), cross_section=xs)
-                straight_all_angle(length=(length - (deltaL)), cross_section=xs)
-            )
-            straight.connect("o1", current_position)
-            current_position = straight.ports["o2"]
-            instances.append(straight)
-
-        else:
-            raise ValueError(f"Invalid mode: {mode}")
-
-    return instances
 
 def dubins_path_meander(
     start: tuple[float, float, float],
@@ -437,11 +384,91 @@ def dubins_path_meander(
     # bt, bp, bq must be arc angle in radians? 
     # Multiplying by arc radius gives us path length.
 
+    # Calculate length to decrease straight portion by
+    meander_radius = 10
     arcLength = deltaL / 4
+    theta_rad = arcLength / meander_radius      # rad
+    print(theta_rad)
+    # Solve isosceles triangle to find linear distance traversed by arc
+    phi_rad = ((m.pi) - theta_rad) / 2
+    print(phi_rad)
+    b = 2 * meander_radius * (m.cos(phi_rad))
+    print(b)
+    psi_rad = (m.pi / 2) - phi_rad
+    print(psi_rad)
+    linearDist = b * m.cos(psi_rad)
+    print(linearDist)
+    linearDecrease = linearDist * 4
+    
 
-    list_ret =  list( zip( bmode, [bt * c, arcLength, arcLength, bp * c, arcLength, arcLength, bq * c], [c, 10, 10, c, 10, 10, c] ) )
+    # compTemp = Component()
+    # straight = compTemp.create_vinst(
+    #     straight_all_angle(length=(bp * c), cross_section=xs)
+    # )
+    # p2 = straight.ports['o2'] 
+    # print(p2)
+    # p1 = straight.ports['o1']
+    # print(p1)
+    
+
+    list_ret =  list( zip( bmode, [bt * c, arcLength, arcLength, (bp * c) - linearDecrease, arcLength, arcLength, bq * c], [c, meander_radius, meander_radius, c, meander_radius, meander_radius, c] ) )
     # print(list_ret)
-    return list_ret
+    return list_ret, linearDecrease
+
+
+def place_dubin_path_meander(
+    component: Component,
+    xs: CrossSectionSpec,
+    port1: Port,
+    solution: list[tuple[str, float, float]],
+    deltaL: float,
+    linearDecrease: float
+) -> list[kf.VInstance]:
+    """Creates GDS component with Dubins path.
+
+    Args:
+        component: component to add the route to.
+        xs: cross-section.
+        port1: input port.
+        solution: Dubins path solution.
+    """
+    c = component
+    current_position = port1
+
+    instances: list[kf.VInstance] = []
+
+    for mode, length, radius in solution:
+        if mode == "L":
+            # Length and radius are in um, convert to nm for gdsfactory
+            arc_angle = 180 * length / (m.pi * radius)
+            bend = c.create_vinst(
+                bend_circular_all_angle(angle=arc_angle, cross_section=xs)
+            )
+            bend.connect("o1", current_position)
+            current_position = bend.ports["o2"]
+            instances.append(bend)
+
+        elif mode == "R":
+            arc_angle = -(180 * length / (m.pi * radius))
+            bend = c.create_vinst(
+                bend_circular_all_angle(angle=arc_angle, cross_section=xs)
+            )
+            bend.connect("o1", current_position)
+            current_position = bend.ports["o2"]
+            instances.append(bend)
+
+        elif mode == "S":
+            straight = c.create_vinst(
+                straight_all_angle(length=(length), cross_section=xs)
+            )
+            straight.connect("o1", current_position)
+            current_position = straight.ports["o2"]
+            instances.append(straight)
+
+        else:
+            raise ValueError(f"Invalid mode: {mode}")
+
+    return instances
 
 
 if __name__ == "__main__":

@@ -98,15 +98,17 @@ for stage in range( numStages ):
     # Add stage M of splitters to master MMI splitter list 
     splitters.append(temp_splitters)
 
-    # If we are not on the stage that connects to the bragg gratings, 
-    # draw the connections betweem gratings 
-    if(stage != 0):
-        rg = round( (numElements * 2) / divisor)
-        for i in range( rg ):
-            if(i % 2 == 0):
-                route_dubin_OPA(pdiv, port1=splitters[stage][int(i/2)].ports['o2'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs, deltaL=10)
-            else:
-                route_dubin_OPA(pdiv, port1=splitters[stage][int(i/2)].ports['o3'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs,  deltaL=20)
+    # # If we are not on the stage that connects to the bragg gratings, 
+    # # draw the connections betweem gratings 
+    # if(stage != 0):
+    #     rg = round( (numElements * 2) / divisor)
+    #     for i in range( rg ):
+    #         if(i % 2 == 0):
+    #             route_dubin_OPA(pdiv, port1=splitters[stage][int(i/2)].ports['o2'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs, deltaL=1)
+    #         else:
+    #             route_dubin_OPA(pdiv, port1=splitters[stage][int(i/2)].ports['o3'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs,  deltaL=1)
+
+    #         # If they aren't connected, add straight in between.
             
 
 top << pdiv
@@ -116,7 +118,9 @@ for i in range(numElements):
     if(i % 2 == 0):
         route_dubin_OPA(top, port1=splitters[0][int(i/2)].ports['o2'], port2=radiatingElements[i].ports['o1'], cross_section=xs,  deltaL=10)
     else:
-        route_dubin_OPA(top, port1=splitters[0][int(i/2)].ports['o3'], port2=radiatingElements[i].ports['o1'], cross_section=xs,  deltaL=20)
+        route_dubin_OPA(top, port1=splitters[0][int(i/2)].ports['o3'], port2=radiatingElements[i].ports['o1'], cross_section=xs,  deltaL=1)
+
+    # If they aren't connected, add straight in between.
 
 # ports_1 = []
 # ports_2 = []
