@@ -12,7 +12,11 @@ separationScalar = 7                   # Should be ~1.2
 elementSeparation = wavelength * separationScalar    # Separation between radiating elements 
 die_width = 3000.0                       # um
 die_height = 3000.0                      # um
-splitter_Xsep = 150                      # X separation between splitter stages, um
+
+deltaLSpacing = 10                        # um
+xBuff = 20                               # Minimum straight leaving/entering port    
+
+splitter_Xsep = (2 * xBuff) + ((numElements + 1) * deltaLSpacing)                      # X separation between splitter stages, um
 xMargin = 500                            # distance from x boundary to place elements, um
 yMargin = 200
 bendRad_min = 10
@@ -23,7 +27,7 @@ ysepMax = elementSeparation * (numElements - 1)
 fa_pitch = 127.0                     # um
 
 # Create duplicate designs?
-duplicate = True
+duplicate = False
 
 # Cornerstone rib cross section
 xs = cs_pdk.cornerstone_rib()
@@ -95,61 +99,48 @@ for stage in range( numStages ):
 
     # If we are not on the stage that connects to the bragg gratings, 
     # draw the connections betweem gratings 
-    # if(stage != 0):
-    #     rg = round( (numElements * 2) / divisor)
-    #     for i in range( rg ):
-    #         if(i % 2 == 0):
-    #             gf.routing.route_dubin(pdiv, port1=splitters[stage][int(i/2)].ports['o2'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs)
-    #             # gf.routing.route_single(pdiv, port1=splitters[stage][int(i/2)].ports['o2'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs, radius=10.0,
-    #             #                         steps=[{"dx": 20},
-    #             #                                {"dy": 50},
-    #             #                                {"dx": 40},
-    #             #                                {"dy": -40},
-    #             #                                {"dx": 20}
-    #             #                                  ])
-    #         else:
-    #             gf.routing.route_dubin(pdiv, port1=splitters[stage][int(i/2)].ports['o3'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs)
+    if(stage != 0):
 
+        rg = round( (numElements * 2) / divisor)
 
+        dxMaxDiff = splitters[stage-1][0].ports['o1'].center[0] - splitters[stage][0].ports['o2'].center[0]
+        print(dxMaxDiff)
 
-splitterCurr1Port = splitters[1][0].ports['o2']
-splitterCurr2Port = splitters[0][0].ports['o1']
-splitterCurr1 = splitterCurr1Port.center
-splitterCurr2 = splitterCurr2Port.center
-print(splitterCurr1)
-print(splitterCurr2)
-dyDiff = splitterCurr2[1] - splitterCurr1[1]
-dxDiff = splitterCurr2[0] - splitterCurr1[0]
-print(dxDiff)
-offset = 30
+        for i in range( rg ):
 
-gf.routing.route_single(pdiv, port1=splitters[1][int(0)].ports['o2'], port2=splitters[0][0].ports['o1'], cross_section=xs, radius=10.0,
-                                    steps=[{"dx": 10},
-                                           {"dy": dyDiff + offset},
-                                           {"dx": 40},
-                                           {"dy": -offset}
+            xDist = dxMaxDiff - (xBuff * (i+1))
+            print(xDist)
+            yChange = 30
+
+            if(i % 2 == 0):
+
+                splitterCurr1 = splitters[stage][int(i/2)].ports['o2'].center
+                splitterCurr2 = splitters[stage-1][i].ports['o1'].center
+                dyDiff = splitterCurr2[1] - splitterCurr1[1]
+                dxDiff = splitterCurr2[0] - splitterCurr1[0]
+
+                # gf.routing.route_dubin(pdiv, port1=splitters[stage][int(i/2)].ports['o2'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs)
+                gf.routing.route_single(pdiv, port1=splitters[stage][int(i/2)].ports['o2'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs, radius=10.0,
+                                        steps=[{"dx": (xBuff/2) * (i+1)},
+                                            {"dy": dyDiff + yChange},
+                                            {"dx":  xDist},
+                                            {"dy": -yChange}
                                              ])
+            else:
 
+                splitterCurr1 = splitters[stage][int(i/2)].ports['o3'].center
+                splitterCurr2 = splitters[stage-1][i].ports['o1'].center
+                dyDiff = splitterCurr2[1] - splitterCurr1[1]
+                dxDiff = splitterCurr2[0] - splitterCurr1[0]
+                offset = 30
 
-splitterCurr1Port = splitters[1][0].ports['o3']
-splitterCurr2Port = splitters[0][1].ports['o1']
-splitterCurr1 = splitterCurr1Port.center
-splitterCurr2 = splitterCurr2Port.center
-print(splitterCurr1)
-print(splitterCurr2)
-dyDiff = splitterCurr2[1] - splitterCurr1[1]
-dxDiff = splitterCurr2[0] - splitterCurr1[0]
-print(dxDiff)
-offset = 30
-
-gf.routing.route_single(pdiv, port1=splitters[1][int(0)].ports['o3'], port2=splitters[0][1].ports['o1'], cross_section=xs, radius=10.0,
-                                    steps=[{"dx": 15},
-                                           {"dy": dyDiff + offset},
-                                           {"dx": 32},
-                                           {"dy": -offset}
-                                             ])
-
-
+                # gf.routing.route_dubin(pdiv, port1=splitters[stage][int(i/2)].ports['o3'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs)
+                gf.routing.route_single(pdiv, port1=splitters[stage][int(i/2)].ports['o3'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs, radius=10.0,
+                                        steps=[{"dx": (xBuff/2) * (i+1)},
+                                               {"dy": dyDiff + yChange},
+                                               {"dx": xDist},
+                                               {"dy": -yChange}
+                                                 ])
 
             
 

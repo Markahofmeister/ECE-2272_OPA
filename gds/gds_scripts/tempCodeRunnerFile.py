@@ -1,2 +1,2 @@
-
-    #             gf.routing.route_dubin(pdiv, 
+ter
+                dyDiff = splitterCurr2[1] - splitterCurr1[1]
