@@ -6,19 +6,14 @@ from gdsfactory.typings import ComponentSpec, CrossSectionSpec
 import math as m
 
 # DESIGN PARAMETERS
-wavelength = 1.55                       # um    
+wavelength = 1.56                       # um. Even for grid snapping.
 numElements = 16                         # Number of radiating elements
-separationScalar = 7                   # Should be ~1.2              
+separationScalar = 4                  # Should be ~1.2              
 elementSeparation = wavelength * separationScalar    # Separation between radiating elements 
 die_width = 3000.0                       # um
 die_height = 3000.0                      # um
-splitter_Xsep = 130
-
-deltaLSpacing = 10                        # um
-xBuff = 20                               # Minimum straight leaving/entering port    
-
-radiatorFeed_Xsep = (( (2 * xBuff) + ((numElements + 1) * deltaLSpacing) ) * 2 ) + 0                 # X separation between splitter stages, um
-xMargin = 500                            # distance from x boundary to place elements, um
+splitter_Xsep = 120                      # X separation between splitter stages, um
+xMargin = 200                            # distance from x boundary to place elements, um
 yMargin = 200
 bendRad_min = 10
 
@@ -30,11 +25,24 @@ fa_pitch = 127.0                     # um
 # Create duplicate designs?
 duplicate = False
 
+
+# DERIVED FROM Cornerstone grating coupler "SOI220nm_1550nm_TE_RIB_Grating_Coupler"
+@gf.cell
+def gc_cornerstone_pdk_subLambda_noEtch(width_grating: float = 1.55, period: float = 0.67) -> gf.Component:
+    # gc = pdk.grating_coupler_rectangular(n_periods=60, period=0.67, fill_factor=0.5, 
+    #                                      length_taper=10, width_grating=width_grating, layer_slab=None, layer_grating=(3,0), cross_section=xs, )
+    
+    l1 = l2 = period / 2
+    gc = gf.components.dbr(w1 = 0.45, w2 = width_grating, l1 = l1, l2 = l2, n=60, cross_section='cornerstone_rib')
+
+    return gc
+
+
 # Cornerstone rib cross section
 xs = cs_pdk.cornerstone_rib()
 
 # Cornerstone Library
-gc = cs_pdk.gc_cornerstone_pdk()
+gc = gc_cornerstone_pdk_subLambda_noEtch(width_grating=1.5, period = 0.67)
 fgc = cs_pdk.gc_focusing_cornerstone_pdk()
 mmi1x2 = cs_pdk.mmi1x2_cornerstone_pdk()
 mmi2x2 = cs_pdk.mmi2x2_cornerstone_pdk()
@@ -62,7 +70,6 @@ radiatingElements = list()
 
 for i in range(numElements):
 
-    # CHANGE TO GRATING COUPLERS
     radiatingElements.insert(i, re << gc)
     radiatingElements[i].movex( (die_width / 2) - xMargin)
     radiatingElements[i].movey( (ysepMax / 2) - (elementSeparation * i) )
@@ -91,97 +98,38 @@ for stage in range( numStages ):
     for i in range( round( numElements / divisor ) ):
 
         temp_splitters.insert(i, pdiv << mmi1x2)
-        if(stage == 0):
-            temp_splitters[i].movex( (die_width / 2) - xMargin - (radiatorFeed_Xsep * (stage + 1)) )
-        else:
-             temp_splitters[i].movex( (die_width / 2) - xMargin - (splitter_Xsep * (stage)) - radiatorFeed_Xsep)
+        temp_splitters[i].movex( (die_width / 2) - xMargin - (splitter_Xsep * (stage + 1)) )
         temp_splitters[i].movey( (ysepMax / 2) - ((divisor-1) * (elementSeparation / 2)) - (elementSeparation * i * divisor) )
 
     # Add stage M of splitters to master MMI splitter list 
     splitters.append(temp_splitters)
 
-
     # If we are not on the stage that connects to the bragg gratings, 
     # draw the connections betweem gratings 
     if(stage != 0):
-
         rg = round( (numElements * 2) / divisor)
         for i in range( rg ):
             if(i % 2 == 0):
-                gf.routing.route_dubin(pdiv, port1=splitters[stage][int(i/2)].ports['o2'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs)           
+                gf.routing.route_dubin(pdiv, port1=splitters[stage][int(i/2)].ports['o2'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs)
             else:
                 gf.routing.route_dubin(pdiv, port1=splitters[stage][int(i/2)].ports['o3'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs)
-                
-
             
 
 OPA << pdiv
 
 # Route final splitter stage to radiating elements 
-
-dxMaxDiff = radiatingElements[0].ports['o1'].center[0] - splitters[0][int(i/2)].ports['o2'].center[0]
-yOffset = 30
-gcPortInDiffY = radiatingElements[0].ports['o1'].center[1] - radiatingElements[1].ports['o1'].center[1]
-mmiPortOutDiffY = splitters[0][0].ports['o2'].center[1] - splitters[0][0].ports['o3'].center[1]
-elementYdiffOffset = gcPortInDiffY - mmiPortOutDiffY
-
-for i in range(numElements):    
-
+for i in range(numElements):
     if(i % 2 == 0):
-
-        xDist = dxMaxDiff - (xBuff * (i+1))
-        yChange = yOffset + i*1
-
-        splitterCurr = splitters[0][int(i/2)].ports['o2'].center
-        radiatorCurr = radiatingElements[i].ports['o1'].center
-        dyDiff = radiatorCurr[1] - splitterCurr[1]
-        dxDiff = radiatorCurr[0] - splitterCurr[0]
-
-        route = gf.routing.route_single(pdiv, port1=splitters[0][int(i/2)].ports['o2'], port2=radiatingElements[i].ports['o1'], cross_section=xs, radius=10.0,
-                                        steps=[{"dx": (xBuff/2) * (i+1)},
-                                            {"dy": dyDiff + yChange},
-                                            {"dx":  xDist},
-                                            {"dy": -yChange}
-                                             ])
-
-        # gf.routing.route_dubin(OPA, port1=splitters[0][int(i/2)].ports['o2'], port2=radiatingElements[i].ports['o1'], cross_section=xs)
+        gf.routing.route_dubin(OPA, port1=splitters[0][int(i/2)].ports['o2'], port2=radiatingElements[i].ports['o1'], cross_section=xs)
     else:
+        gf.routing.route_dubin(OPA, port1=splitters[0][int(i/2)].ports['o3'], port2=radiatingElements[i].ports['o1'], cross_section=xs)
 
-        xDist = dxMaxDiff - (xBuff * (i+1))
-        yChange = (yOffset + i*1) + (elementYdiffOffset / 2)
 
-        splitterCurr = splitters[0][int(i/2)].ports['o3'].center
-        radiatorCurr = radiatingElements[i].ports['o1'].center
-        dyDiff = radiatorCurr[1] - splitterCurr[1]
-        dxDiff = radiatorCurr[0] - splitterCurr[0]
-
-        route = gf.routing.route_single(pdiv, port1=splitters[0][int(i/2)].ports['o3'], port2=radiatingElements[i].ports['o1'], cross_section=xs, radius=10.0,
-                                        steps=[{"dx": (xBuff/2) * (i+1)},
-                                               {"dy": dyDiff + yChange},
-                                               {"dx": xDist},
-                                               {"dy": -yChange}
-                                                 ])
-        
-        # gf.routing.route_dubin(OPA, port1=splitters[0][int(i/2)].ports['o3'], port2=radiatingElements[i].ports['o1'], cross_section=xs)
-
-    # if(i == 0):
-    print(f"Total Route length for {i}: {route.length / 1000} um")
-        
-
-# ports_1 = []
-# ports_2 = []
-# for i in range(numElements):
-#     ports_1.append(radiatingElements[i].ports['o1'])
-#     if(i % 2 == 0):
-#         ports_2.append(splitters[0][int(i/2)].ports['o2'])
-#     else:
-#         ports_2.append(splitters[0][int(i/2)].ports['o3'])
-
-# gf.routing.route_bundle_all_angle(top, ports1=ports_1, ports2=ports_2, cross_section=xs, bend=)
 
 # Input Grating Coupler
 gIn = gf.Component('gratingIn')
 
+# Position Input Grating Coupler
 # Position Input Grating Coupler
 gratingIn = gIn << fgc
 mov =  OPA.xmax  - OPA.xsize - 50
@@ -191,7 +139,6 @@ gratingIn.movex(mov)
 # Add to top and route waveguide
 OPA << gIn
 gf.routing.route_single(OPA, port1=gratingIn.ports['o1'], port2=splitters[numStages - 1][0].ports['o1'], cross_section=xs)
-
 
 # Input Calibration Grating Coupler 
 cIn = gf.Component('Calibrator Input')
@@ -209,7 +156,6 @@ OPA << cIn
 OPA << cOut
 
 gf.routing.route_single(OPA, port1=calIn.ports['o1'], port2=calOut.ports['o1'], cross_section=xs, radius = 20.0)
-
 
 # floor plan
 # This is the outline of the available space 

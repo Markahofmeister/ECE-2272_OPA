@@ -1,2 +1,2 @@
-ter
-                dyDiff = splitterCurr2[1] - splitterCurr1[1]
+
+# Create duplicate designs?
