@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<report-database>
+ <description/>
+ <original-file/>
+ <generator/>
+ <top-cell/>
+ <tags>
+ </tags>
+ <categories>
+  <category>
+   <name>o1 - o1</name>
+   <description/>
+   <categories>
+   </categories>
+  </category>
+ </categories>
+ <cells>
+  <cell>
+   <name>OPA</name>
+   <variant/>
+   <layout-name/>
+   <references>
+   </references>
+  </cell>
+ </cells>
+ <items>
+  <item>
+   <tags/>
+   <category>'o1 - o1'</category>
+   <cell>OPA</cell>
+   <visited>false</visited>
+   <multiplicity>1</multiplicity>
+   <comment/>
+   <image/>
+   <values>
+    <value>text: 'Error while trying to place route from o1 to o1 at points (dbu): [409666,127000, 439666,127000, 439666,77000, 339666,77000, 339666,-77000, 439666,-77000, 439666,-127000, 409666,-127000, 409666,-127000]'</value>
+    <value>text: 'Exception: distance between points 439666,-127000 and 409666,-127000 is too small to safely place bends pt=409666,-127000, old_pt=439666,-127000, pt.distance(old_pt)=30000.0 &lt; 2 * b90r=40000'</value>
+    <value>polygon: (409.666,-127.225;409.666,-126.775;439.441,-126.775;439.441,-77.225;339.441,-77.225;339.441,77.225;439.441,77.225;439.441,126.775;409.666,126.775;409.666,127.225;439.891,127.225;439.891,76.775;339.891,76.775;339.891,-76.775;439.891,-76.775;439.891,-127.225)</value>
+   </values>
+  </item>
+ </items>
+</report-database>
