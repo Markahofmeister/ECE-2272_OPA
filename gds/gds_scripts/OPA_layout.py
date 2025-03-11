@@ -3,23 +3,27 @@ import gdsfactory as gf
 import gdsfactory.components as pdk
 import cornerstone_pdk as cs_pdk # type: ignore
 from gdsfactory.typings import ComponentSpec, CrossSectionSpec
-import math
+import math as m
 
 # DESIGN PARAMETERS
 wavelength = 1.55                       # um    
-numElements = 32                         # Number of radiating elements
+numElements = 16                         # Number of radiating elements
 separationScalar = 7                   # Should be ~1.2              
 elementSeparation = wavelength * separationScalar    # Separation between radiating elements 
 die_width = 3000.0                       # um
 die_height = 3000.0                      # um
 splitter_Xsep = 150                      # X separation between splitter stages, um
 xMargin = 500                            # distance from x boundary to place elements, um
+yMargin = 200
 bendRad_min = 10
 
 # Max. separation between outer radiating elementsa
 ysepMax = elementSeparation * (numElements - 1)    
 
 fa_pitch = 127.0                     # um
+
+# Create duplicate designs?
+duplicate = True
 
 # Cornerstone rib cross section
 xs = cs_pdk.cornerstone_rib()
@@ -45,12 +49,7 @@ wgx = cs_pdk.crossing_cornerstone_pdk()
 # top cell
 top = gf.Component('TOP')
 
-# floor plan
-# This is the outline of the available space 
-# ^^ It is on layer 99 because of it.
-top << gf.components.rectangle(size=(die_width, die_height), centered=True, layer=(99,0))
-
-
+OPA = gf.Component('OPA')
 
 re = gf.Component('Radiating Elements')
 
@@ -64,7 +63,7 @@ for i in range(numElements):
     radiatingElements[i].movey( (ysepMax / 2) - (elementSeparation * i) )
 
 # Add radiating elements to top
-top << re
+OPA << re
 
 
 # Splitter
@@ -104,14 +103,14 @@ for stage in range( numStages ):
                 gf.routing.route_dubin(pdiv, port1=splitters[stage][int(i/2)].ports['o3'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs)
             
 
-top << pdiv
+OPA << pdiv
 
 # Route final splitter stage to radiating elements 
 for i in range(numElements):
     if(i % 2 == 0):
-        gf.routing.route_dubin(top, port1=splitters[0][int(i/2)].ports['o2'], port2=radiatingElements[i].ports['o1'], cross_section=xs)
+        gf.routing.route_dubin(OPA, port1=splitters[0][int(i/2)].ports['o2'], port2=radiatingElements[i].ports['o1'], cross_section=xs)
     else:
-        gf.routing.route_dubin(top, port1=splitters[0][int(i/2)].ports['o3'], port2=radiatingElements[i].ports['o1'], cross_section=xs)
+        gf.routing.route_dubin(OPA, port1=splitters[0][int(i/2)].ports['o3'], port2=radiatingElements[i].ports['o1'], cross_section=xs)
 
 # ports_1 = []
 # ports_2 = []
@@ -134,8 +133,41 @@ gratingIn.rotate(180.0)
 gratingIn.movex(mov)
 
 # Add to top and route waveguide
-top << gIn
-gf.routing.route_single(top, port1=gratingIn.ports['o1'], port2=splitters[numStages - 1][0].ports['o1'], cross_section=xs)
+OPA << gIn
+gf.routing.route_single(OPA, port1=gratingIn.ports['o1'], port2=splitters[numStages - 1][0].ports['o1'], cross_section=xs)
+
+# floor plan
+# This is the outline of the available space 
+# ^^ It is on layer 99 because of it.
+top << gf.components.rectangle(size=(die_width, die_height), centered=True, layer=(99,0))
+
+# Add OPA to top level cell
+# top << OPA
+
+dup = gf.Component('dup')
+
+if(duplicate):
+
+    deviceMargin = 150      # Buffer between device copies, um
+
+    opaDimX = OPA.xsize
+    opaDimY = OPA.ysize
+
+    deviceYSizeBuff = opaDimY + deviceMargin
+    numCopies = m.floor(((die_height - (yMargin * 2)) / deviceYSizeBuff) )
+    # print(numCopies)
+
+    for i in range(numCopies):
+        topTemp = gf.Component("topTemp" + str(i))
+        topTemp << OPA
+        yPos = (die_height / 2) - ((deviceYSizeBuff) * (i + 1))
+        topTemp.movey(yPos)
+        # dup << topTemp
+        top << topTemp
+    
+
+else:
+    top << OPA
 
 top.plot()
 top.show()
