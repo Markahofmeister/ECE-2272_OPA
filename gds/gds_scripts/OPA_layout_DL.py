@@ -12,11 +12,12 @@ separationScalar = 7                   # Should be ~1.2
 elementSeparation = wavelength * separationScalar    # Separation between radiating elements 
 die_width = 3000.0                       # um
 die_height = 3000.0                      # um
+splitter_Xsep = 130
 
 deltaLSpacing = 10                        # um
 xBuff = 20                               # Minimum straight leaving/entering port    
 
-splitter_Xsep = (2 * xBuff) + ((numElements + 1) * deltaLSpacing)                      # X separation between splitter stages, um
+radiatorFeed_Xsep = ( (2 * xBuff) + ((numElements + 1) * deltaLSpacing) ) * 2                     # X separation between splitter stages, um
 xMargin = 500                            # distance from x boundary to place elements, um
 yMargin = 200
 bendRad_min = 10
@@ -90,7 +91,10 @@ for stage in range( numStages ):
     for i in range( round( numElements / divisor ) ):
 
         temp_splitters.insert(i, pdiv << mmi1x2)
-        temp_splitters[i].movex( (die_width / 2) - xMargin - (splitter_Xsep * (stage + 1)) )
+        if(stage == 0):
+            temp_splitters[i].movex( (die_width / 2) - xMargin - (radiatorFeed_Xsep * (stage + 1)) )
+        else:
+             temp_splitters[i].movex( (die_width / 2) - xMargin - (splitter_Xsep * (stage)) - radiatorFeed_Xsep)
         temp_splitters[i].movey( (ysepMax / 2) - ((divisor-1) * (elementSeparation / 2)) - (elementSeparation * i * divisor) )
 
     # Add stage M of splitters to master MMI splitter list 
@@ -102,45 +106,12 @@ for stage in range( numStages ):
     if(stage != 0):
 
         rg = round( (numElements * 2) / divisor)
-
-        dxMaxDiff = splitters[stage-1][0].ports['o1'].center[0] - splitters[stage][0].ports['o2'].center[0]
-        print(dxMaxDiff)
-
         for i in range( rg ):
-
-            xDist = dxMaxDiff - (xBuff * (i+1))
-            print(xDist)
-            yChange = 30
-
             if(i % 2 == 0):
-
-                splitterCurr1 = splitters[stage][int(i/2)].ports['o2'].center
-                splitterCurr2 = splitters[stage-1][i].ports['o1'].center
-                dyDiff = splitterCurr2[1] - splitterCurr1[1]
-                dxDiff = splitterCurr2[0] - splitterCurr1[0]
-
-                # gf.routing.route_dubin(pdiv, port1=splitters[stage][int(i/2)].ports['o2'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs)
-                gf.routing.route_single(pdiv, port1=splitters[stage][int(i/2)].ports['o2'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs, radius=10.0,
-                                        steps=[{"dx": (xBuff/2) * (i+1)},
-                                            {"dy": dyDiff + yChange},
-                                            {"dx":  xDist},
-                                            {"dy": -yChange}
-                                             ])
+                gf.routing.route_dubin(pdiv, port1=splitters[stage][int(i/2)].ports['o2'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs)           
             else:
-
-                splitterCurr1 = splitters[stage][int(i/2)].ports['o3'].center
-                splitterCurr2 = splitters[stage-1][i].ports['o1'].center
-                dyDiff = splitterCurr2[1] - splitterCurr1[1]
-                dxDiff = splitterCurr2[0] - splitterCurr1[0]
-                offset = 30
-
-                # gf.routing.route_dubin(pdiv, port1=splitters[stage][int(i/2)].ports['o3'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs)
-                gf.routing.route_single(pdiv, port1=splitters[stage][int(i/2)].ports['o3'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs, radius=10.0,
-                                        steps=[{"dx": (xBuff/2) * (i+1)},
-                                               {"dy": dyDiff + yChange},
-                                               {"dx": xDist},
-                                               {"dy": -yChange}
-                                                 ])
+                gf.routing.route_dubin(pdiv, port1=splitters[stage][int(i/2)].ports['o3'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs)
+                
 
             
 
@@ -148,10 +119,49 @@ OPA << pdiv
 
 # Route final splitter stage to radiating elements 
 for i in range(numElements):
+
+    dxMaxDiff = radiatingElements[0].ports['o1'].center[0] - splitters[0][int(i/2)].ports['o2'].center[0]
+    print(dxMaxDiff)
+
     if(i % 2 == 0):
-        gf.routing.route_dubin(OPA, port1=splitters[0][int(i/2)].ports['o2'], port2=radiatingElements[i].ports['o1'], cross_section=xs)
+
+        xDist = dxMaxDiff - (xBuff * (i+1))
+        print(xDist)
+        yChange = 30
+
+        splitterCurr = splitters[0][int(i/2)].ports['o2'].center
+        radiatorCurr = radiatingElements[i].ports['o1'].center
+        dyDiff = radiatorCurr[1] - splitterCurr[1]
+        dxDiff = radiatorCurr[0] - splitterCurr[0]
+
+        gf.routing.route_single(pdiv, port1=splitters[0][int(i/2)].ports['o2'], port2=radiatingElements[i].ports['o1'], cross_section=xs, radius=10.0,
+                                        steps=[{"dx": (xBuff/2) * (i+1)},
+                                            {"dy": dyDiff + yChange},
+                                            {"dx":  xDist},
+                                            {"dy": -yChange}
+                                             ])
+
+
+        # gf.routing.route_dubin(OPA, port1=splitters[0][int(i/2)].ports['o2'], port2=radiatingElements[i].ports['o1'], cross_section=xs)
     else:
-        gf.routing.route_dubin(OPA, port1=splitters[0][int(i/2)].ports['o3'], port2=radiatingElements[i].ports['o1'], cross_section=xs)
+
+        xDist = dxMaxDiff - (xBuff * (i+1))
+        print(xDist)
+        yChange = 30
+
+        splitterCurr = splitters[0][int(i/2)].ports['o3'].center
+        radiatorCurr = radiatingElements[i].ports['o1'].center
+        dyDiff = radiatorCurr[1] - splitterCurr[1]
+        dxDiff = radiatorCurr[0] - splitterCurr[0]
+
+        gf.routing.route_single(pdiv, port1=splitters[0][int(i/2)].ports['o3'], port2=radiatingElements[i].ports['o1'], cross_section=xs, radius=10.0,
+                                        steps=[{"dx": (xBuff/2) * (i+1)},
+                                               {"dy": dyDiff + yChange},
+                                               {"dx": xDist},
+                                               {"dy": -yChange}
+                                                 ])
+
+        # gf.routing.route_dubin(OPA, port1=splitters[0][int(i/2)].ports['o3'], port2=radiatingElements[i].ports['o1'], cross_section=xs)
 
 # ports_1 = []
 # ports_2 = []
@@ -169,7 +179,7 @@ gIn = gf.Component('gratingIn')
 
 # Position Input Grating Coupler
 gratingIn = gIn << fgc
-mov = (die_width / 2) - xMargin - (splitter_Xsep * (numStages + 1) - (splitter_Xsep / 2))
+mov = (die_width / 2) - xMargin - (radiatorFeed_Xsep * (numStages + 1) - (radiatorFeed_Xsep / 2))
 gratingIn.rotate(180.0)
 gratingIn.movex(mov)
 

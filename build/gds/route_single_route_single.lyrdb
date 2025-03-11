@@ -8,7 +8,7 @@
  </tags>
  <categories>
   <category>
-   <name>o3 - o1</name>
+   <name>o2 - o1</name>
    <description/>
    <categories>
    </categories>
@@ -26,16 +26,16 @@
  <items>
   <item>
    <tags/>
-   <category>'o3 - o1'</category>
+   <category>'o2 - o1'</category>
    <cell>Power Division</cell>
    <visited>false</visited>
    <multiplicity>1</multiplicity>
    <comment/>
    <image/>
    <values>
-    <value>text: 'Error while trying to place route from o3 to o1 at points (dbu): [632700,-23270, 692700,-23270, 692700,-2550, 710000,-2550, 710000,-32550, 770000,-32550]'</value>
-    <value>text: 'Exception: distance between points 692700,-2550 and 710000,-2550 is too small to safely place bends pt=710000,-2550, old_pt=692700,-2550, pt.distance(old_pt)=17300.0 &lt; 2 * b90r=20000'</value>
-    <value>polygon: (709.775,-32.775;709.775,-2.775;692.925,-2.775;692.925,-23.495;632.7,-23.495;632.7,-23.045;692.475,-23.045;692.475,-2.325;710.225,-2.325;710.225,-32.325;770,-32.325;770,-32.775)</value>
+    <value>text: 'Error while trying to place route from o2 to o1 at points (dbu): [842700,12420, 912700,12420, 912700,46275, 930000,46275, 930000,16275, 1000000,16275]'</value>
+    <value>text: 'Exception: distance between points 912700,46275 and 930000,46275 is too small to safely place bends pt=930000,46275, old_pt=912700,46275, pt.distance(old_pt)=17300.0 &lt; 2 * b90r=20000'</value>
+    <value>polygon: (842.7,12.195;842.7,12.645;912.475,12.645;912.475,46.5;930.225,46.5;930.225,16.5;1000,16.5;1000,16.05;929.775,16.05;929.775,46.05;912.925,46.05;912.925,12.195)</value>
    </values>
   </item>
  </items>
