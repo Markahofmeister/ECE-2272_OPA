@@ -124,12 +124,14 @@ gcPortInDiffY = radiatingElements[0].ports['o1'].center[1] - radiatingElements[1
 mmiPortOutDiffY = splitters[0][0].ports['o2'].center[1] - splitters[0][0].ports['o3'].center[1]
 elementYdiffOffset = gcPortInDiffY - mmiPortOutDiffY
 
+deltaLScalar = 0.2
+
 for i in range(numElements):    
 
     if(i % 2 == 0):
 
         xDist = dxMaxDiff - (xBuff * (i+1))
-        yChange = yOffset + i*1
+        yChange = yOffset + i*deltaLScalar
 
         splitterCurr = splitters[0][int(i/2)].ports['o2'].center
         radiatorCurr = radiatingElements[i].ports['o1'].center
@@ -147,7 +149,7 @@ for i in range(numElements):
     else:
 
         xDist = dxMaxDiff - (xBuff * (i+1))
-        yChange = (yOffset + i*1) + (elementYdiffOffset / 2)
+        yChange = (yOffset + i*deltaLScalar) + (elementYdiffOffset / 2)
 
         splitterCurr = splitters[0][int(i/2)].ports['o3'].center
         radiatorCurr = radiatingElements[i].ports['o1'].center
@@ -163,7 +165,6 @@ for i in range(numElements):
         
         # gf.routing.route_dubin(OPA, port1=splitters[0][int(i/2)].ports['o3'], port2=radiatingElements[i].ports['o1'], cross_section=xs)
 
-    # if(i == 0):
     print(f"Total Route length for {i}: {route.length / 1000} um")
         
 
@@ -195,19 +196,28 @@ gf.routing.route_single(OPA, port1=gratingIn.ports['o1'], port2=splitters[numSta
 # Input Calibration Grating Coupler 
 cIn = gf.Component('Calibrator Input')
 calIn = cIn << fgc
-calIn.movex(gIn.x - (gIn.xsize / 1))
-calIn.movey(gIn.y + fa_pitch)
+cIn.rotate(180.0)
+calIn.movex(gratingIn.ports['o1'].center[0])
+calIn.movey(gratingIn.ports['o1'].center[1] + fa_pitch)
 
 # Output Calibration Grating Coupler 
 cOut = gf.Component('Calibrator Output')
 calOut = cOut << fgc
-calOut.movex(gIn.x - (gIn.xsize / 1))
-calOut.movey(gIn.y - fa_pitch)
+cOut.rotate(180.0)
+cOut.movex(gratingIn.ports['o1'].center[0])
+cOut.movey(gratingIn.ports['o1'].center[1] - fa_pitch)
 
 OPA << cIn
 OPA << cOut
 
-gf.routing.route_single(OPA, port1=calIn.ports['o1'], port2=calOut.ports['o1'], cross_section=xs, radius = 20.0)
+gf.routing.route_single(OPA, port1=calIn.ports['o1'], port2=calOut.ports['o1'], cross_section=xs, radius = 20.0,
+                                                    steps=[{"dx": 30},
+                                                    {"dy": -50},
+                                                    {"dx":  -100},
+                                                    {"dy":  -((fa_pitch * 2) - 100)},
+                                                    {"dx":  100},
+                                                    {"dy": -50}
+                                                    ])
 
 
 # floor plan
@@ -241,6 +251,11 @@ if(duplicate):
     
 
 else:
+
+    pos = (radiatingElements[0].center[0], radiatingElements[0].ymax + 75)
+    text = gf.components.texts.text(text = "CS GC, dL = 400 nm", size = 36, position = pos, layer=(100,0), justify="right")
+    top << text
+
     top << OPA
 
 top.plot()

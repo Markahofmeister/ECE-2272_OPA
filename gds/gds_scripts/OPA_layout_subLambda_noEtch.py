@@ -28,13 +28,14 @@ duplicate = True
 
 # DERIVED FROM Cornerstone grating coupler "SOI220nm_1550nm_TE_RIB_Grating_Coupler"
 @gf.cell
-def gc_cornerstone_pdk_subLambda_noEtch(width_grating: float = 1.55, period: float = 0.67) -> gf.Component:
+def gc_cornerstone_pdk_subLambda_noEtch(width_grating: float = 1.55, period: float = 0.67, nPeriods: float = 60) -> gf.Component:
 
     l1 = l2 = period / 2
-    gc = gf.components.dbr(w1 = 0.45, w2 = width_grating, l1 = l1, l2 = l2, n=60, cross_section='cornerstone_rib')
+    gc = gf.components.dbr(w1 = 0.45, w2 = width_grating, l1 = l1, l2 = l2, n=nPeriods, cross_section='cornerstone_rib')
 
     return gc
 
+numGCPeriods = 240
 
 # Cornerstone rib cross section
 xs = cs_pdk.cornerstone_rib()
@@ -58,7 +59,7 @@ if(duplicate):
 
     for copy in range(numCopies):
 
-        gc = gc_cornerstone_pdk_subLambda_noEtch(width_grating=gratingWidths[copy], period = gratingPeriods[copy])
+        gc = gc_cornerstone_pdk_subLambda_noEtch(width_grating=gratingWidths[copy], period = gratingPeriods[copy], nPeriods=numGCPeriods)
 
         OPATemp = gf.Component("OPA_subL" + str(copy))
 
@@ -142,22 +143,35 @@ if(duplicate):
         # Input Calibration Grating Coupler 
         cIn = gf.Component('Calibrator Input' + str(copy))
         calIn = cIn << fgc
-        calIn.movex(gIn.x - (gIn.xsize / 1))
-        calIn.movey(gIn.y + fa_pitch)
+        cIn.rotate(180.0)
+        calIn.movex(gratingIn.ports['o1'].center[0])
+        calIn.movey(gratingIn.ports['o1'].center[1] + fa_pitch)
 
         # Output Calibration Grating Coupler 
         cOut = gf.Component('Calibrator Output' + str(copy))
         calOut = cOut << fgc
-        calOut.movex(gIn.x - (gIn.xsize / 1))
-        calOut.movey(gIn.y - fa_pitch)
+        cOut.rotate(180.0)
+        cOut.movex(gratingIn.ports['o1'].center[0])
+        cOut.movey(gratingIn.ports['o1'].center[1] - fa_pitch)
 
         OPATemp << cIn
         OPATemp << cOut
 
-        gf.routing.route_single(OPATemp, port1=calIn.ports['o1'], port2=calOut.ports['o1'], cross_section=xs, radius = 20.0)
+        gf.routing.route_single(OPATemp, port1=calIn.ports['o1'], port2=calOut.ports['o1'], cross_section=xs, radius = 20.0,
+                                                    steps=[{"dx": 30},
+                                                    {"dy": -50},
+                                                    {"dx":  -100},
+                                                    {"dy":  -((fa_pitch * 2) - 100)},
+                                                    {"dx":  100},
+                                                    {"dy": -50}
+                                                    ])
 
         OPAIntermediate = gf.Component("Intermediate" + str(copy))
         OPAIntermediate << OPATemp
+
+        pos = (radiatingElements[0].center[0], radiatingElements[0].ymax + 25)
+        text = gf.components.texts.text(text = "GC2, WIDTH = " + str(gratingWidths[copy]) + " um", size = 28, position = pos, layer=(100,0), justify="right")
+        OPAIntermediate << text
 
         OPAIntermediate.movey(400 * copy)
 
@@ -184,7 +198,7 @@ if(duplicate):
 
 else:
 
-    gc = gc_cornerstone_pdk_subLambda_noEtch(width_grating=1.0, period=0.67)
+    gc = gc_cornerstone_pdk_subLambda_noEtch(width_grating=1.0, period=0.67, nPeriods=numGCPeriods)
 
     # top cell
     top = gf.Component('TOP')

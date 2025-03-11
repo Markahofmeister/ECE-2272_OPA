@@ -36,8 +36,8 @@ duplicate = True
 
 # DERIVED FROM Cornerstone grating coupler "SOI220nm_1550nm_TE_RIB_Grating_Coupler"
 @gf.cell
-def gc_cornerstone_pdk_subLambda(width_grating: float = 1.55) -> gf.Component:
-    gc = pdk.grating_coupler_rectangular(n_periods=60, period=0.67, fill_factor=0.5, 
+def gc_cornerstone_pdk_subLambda(width_grating: float = 1.55, nPeriods: float = 60) -> gf.Component:
+    gc = pdk.grating_coupler_rectangular(n_periods=nPeriods, period=0.67, fill_factor=0.5, 
                                          length_taper=10, width_grating=width_grating, layer_slab=None, layer_grating=(3,0), cross_section=xs)
     return gc
 
@@ -51,6 +51,8 @@ mmi1x2 = cs_pdk.mmi1x2_cornerstone_pdk()
 mmi2x2 = cs_pdk.mmi2x2_cornerstone_pdk()
 wgx = cs_pdk.crossing_cornerstone_pdk()
 
+numGCPeriods = 240
+
 
 if(duplicate):     
 
@@ -58,13 +60,15 @@ if(duplicate):
     top = gf.Component('TOP')
 
     numCopies = 3
-    deltaLScalars = [0.33, 0.66, 1]
+    # Each unit changes an arm by 2 um
+    # Test 200nm, 400 nm, 600 nm.
+    deltaLScalars = [0.1, 0.2, 0.3]
 
     gratingWidth = 1.0
 
     for copy in range(numCopies):
 
-        gc = gc_cornerstone_pdk_subLambda(width_grating=gratingWidth)
+        gc = gc_cornerstone_pdk_subLambda(width_grating=gratingWidth, nPeriods = numGCPeriods)
 
         OPATemp = gf.Component("OPA_subL" + str(copy))
 
@@ -167,6 +171,8 @@ if(duplicate):
                                                     {"dx": xDist},
                                                     {"dy": -yChange}
                                                     ])
+                
+            print(f"Total Route length for {copy}, {i}: {route.length / 1000} um")
 
 
 
@@ -186,22 +192,35 @@ if(duplicate):
         # Input Calibration Grating Coupler 
         cIn = gf.Component('Calibrator Input' + str(copy))
         calIn = cIn << fgc
-        calIn.movex(gIn.x - (gIn.xsize / 1))
-        calIn.movey(gIn.y + fa_pitch)
+        cIn.rotate(180.0)
+        calIn.movex(gratingIn.ports['o1'].center[0])
+        calIn.movey(gratingIn.ports['o1'].center[1] + fa_pitch)
 
         # Output Calibration Grating Coupler 
         cOut = gf.Component('Calibrator Output' + str(copy))
         calOut = cOut << fgc
-        calOut.movex(gIn.x - (gIn.xsize / 1))
-        calOut.movey(gIn.y - fa_pitch)
+        cOut.rotate(180.0)
+        cOut.movex(gratingIn.ports['o1'].center[0])
+        cOut.movey(gratingIn.ports['o1'].center[1] - fa_pitch)
 
         OPATemp << cIn
         OPATemp << cOut
 
-        gf.routing.route_single(OPATemp, port1=calIn.ports['o1'], port2=calOut.ports['o1'], cross_section=xs, radius = 20.0)
+        gf.routing.route_single(OPATemp, port1=calIn.ports['o1'], port2=calOut.ports['o1'], cross_section=xs, radius = 20.0,
+                                                    steps=[{"dx": 30},
+                                                    {"dy": -50},
+                                                    {"dx":  -100},
+                                                    {"dy":  -((fa_pitch * 2) - 100)},
+                                                    {"dx":  100},
+                                                    {"dy": -50}
+                                                    ])
 
         OPAIntermediate = gf.Component("Intermediate" + str(copy))
         OPAIntermediate << OPATemp
+
+        pos = (radiatingElements[0].center[0], radiatingElements[0].ymax + 75)
+        text = gf.components.texts.text(text = "GC1, dL = " + str(int(2000 * deltaLScalars[copy])) + " nm", size = 28, position = pos, layer=(100,0), justify="right")
+        OPAIntermediate << text
 
         OPAIntermediate.movey(1000 * copy)
 
@@ -228,7 +247,7 @@ if(duplicate):
 
 else:
 
-    gc = gc_cornerstone_pdk_subLambda(width_grating=1.0)
+    gc = gc_cornerstone_pdk_subLambda(width_grating=1.0, nPeriods = numGCPeriods)
 
     # top cell
     top = gf.Component('TOP')

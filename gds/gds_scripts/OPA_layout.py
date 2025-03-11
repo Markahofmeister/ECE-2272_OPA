@@ -118,7 +118,6 @@ for i in range(numElements):
 gIn = gf.Component('gratingIn')
 
 # Position Input Grating Coupler
-# Position Input Grating Coupler
 gratingIn = gIn << fgc
 mov =  OPA.xmax  - OPA.xsize - 50
 gratingIn.rotate(180.0)
@@ -131,19 +130,28 @@ gf.routing.route_single(OPA, port1=gratingIn.ports['o1'], port2=splitters[numSta
 # Input Calibration Grating Coupler 
 cIn = gf.Component('Calibrator Input')
 calIn = cIn << fgc
-calIn.movex(gIn.x - (gIn.xsize / 1))
-calIn.movey(gIn.y + fa_pitch)
+cIn.rotate(180.0)
+calIn.movex(gratingIn.ports['o1'].center[0])
+calIn.movey(gratingIn.ports['o1'].center[1] + fa_pitch)
 
 # Output Calibration Grating Coupler 
 cOut = gf.Component('Calibrator Output')
 calOut = cOut << fgc
-calOut.movex(gIn.x - (gIn.xsize / 1))
-calOut.movey(gIn.y - fa_pitch)
+cOut.rotate(180.0)
+cOut.movex(gratingIn.ports['o1'].center[0])
+cOut.movey(gratingIn.ports['o1'].center[1] - fa_pitch)
 
 OPA << cIn
 OPA << cOut
 
-gf.routing.route_single(OPA, port1=calIn.ports['o1'], port2=calOut.ports['o1'], cross_section=xs, radius = 20.0)
+gf.routing.route_single(OPA, port1=calIn.ports['o1'], port2=calOut.ports['o1'], cross_section=xs, radius = 20.0,
+                                                    steps=[{"dx": 30},
+                                                    {"dy": -50},
+                                                    {"dx":  -100},
+                                                    {"dy":  -((fa_pitch * 2) - 100)},
+                                                    {"dx":  100},
+                                                    {"dy": -50}
+                                                    ])
 
 # floor plan
 # This is the outline of the available space 
@@ -176,7 +184,12 @@ if(duplicate):
     
 
 else:
+    pos = (radiatingElements[0].center[0], radiatingElements[0].ymax + 25)
+    text = gf.components.texts.text(text = "CS GC", size = 36, position = pos, layer=(100,0), justify="center")
+    top << text
+
     top << OPA
+
 
 top.plot()
 top.show()
