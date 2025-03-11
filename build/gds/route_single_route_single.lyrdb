@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<report-database>
+ <description/>
+ <original-file/>
+ <generator/>
+ <top-cell/>
+ <tags>
+ </tags>
+ <categories>
+  <category>
+   <name>o2 - o1</name>
+   <description/>
+   <categories>
+   </categories>
+  </category>
+ </categories>
+ <cells>
+  <cell>
+   <name>Power Division</name>
+   <variant/>
+   <layout-name/>
+   <references>
+   </references>
+  </cell>
+ </cells>
+ <items>
+  <item>
+   <tags/>
+   <category>'o2 - o1'</category>
+   <cell>Power Division</cell>
+   <visited>false</visited>
+   <multiplicity>1</multiplicity>
+   <comment/>
+   <image/>
+   <values>
+    <value>text: 'Error while trying to place route from o2 to o1 at points (dbu): [752700,66670, 772700,66670, 772700,105950, 812700,105950, 812700,66670, 832700,66670, 830000,75950]'</value>
+    <value>text: 'Exception: Non-manhattan vectors are not supported'</value>
+    <value>polygon: (752.7,66.445;752.7,66.895;772.475,66.895;772.475,106.175;812.925,106.175;812.925,66.895;832.4,66.895;829.784,75.887;830.216,76.013;832.979,66.517;832.925,66.445;812.475,66.445;812.475,105.725;772.925,105.725;772.925,66.445)</value>
+   </values>
+  </item>
+ </items>
+</report-database>

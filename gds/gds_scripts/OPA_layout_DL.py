@@ -92,15 +92,42 @@ for stage in range( numStages ):
     # Add stage M of splitters to master MMI splitter list 
     splitters.append(temp_splitters)
 
+
     # If we are not on the stage that connects to the bragg gratings, 
     # draw the connections betweem gratings 
-    if(stage != 0):
-        rg = round( (numElements * 2) / divisor)
-        for i in range( rg ):
-            if(i % 2 == 0):
-                gf.routing.route_dubin(pdiv, port1=splitters[stage][int(i/2)].ports['o2'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs)
-            else:
-                gf.routing.route_dubin(pdiv, port1=splitters[stage][int(i/2)].ports['o3'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs)
+    # if(stage != 0):
+    #     rg = round( (numElements * 2) / divisor)
+    #     for i in range( rg ):
+    #         if(i % 2 == 0):
+    #             gf.routing.route_dubin(pdiv, port1=splitters[stage][int(i/2)].ports['o2'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs)
+    #             # gf.routing.route_single(pdiv, port1=splitters[stage][int(i/2)].ports['o2'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs, radius=10.0,
+    #             #                         steps=[{"dx": 20},
+    #             #                                {"dy": 50},
+    #             #                                {"dx": 40},
+    #             #                                {"dy": -40},
+    #             #                                {"dx": 20}
+    #             #                                  ])
+    #         else:
+    #             gf.routing.route_dubin(pdiv, port1=splitters[stage][int(i/2)].ports['o3'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs)
+
+
+
+splitterCurr1Port = splitters[1][0].ports['o2']
+splitterCurr2Port = splitters[0][0].ports['o1']
+splitterCurr1 = splitterCurr1Port.center
+splitterCurr2 = splitterCurr2Port.center
+print(splitterCurr1)
+print(splitterCurr2)
+dyDiff = splitterCurr2[1] - splitterCurr1[1]
+offset = 30
+
+gf.routing.route_single(pdiv, port1=splitters[1][int(0)].ports['o2'], port2=splitters[0][0].ports['o1'], cross_section=xs, radius=10.0,
+                                    steps=[{"dx": 20},
+                                           {"dy": dyDiff + offset},
+                                           {"dx": 40},
+                                           {"dy": -offset}
+                                             ])
+
             
 
 OPA << pdiv
