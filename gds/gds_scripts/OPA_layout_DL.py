@@ -104,7 +104,6 @@ for stage in range( numStages ):
     # If we are not on the stage that connects to the bragg gratings, 
     # draw the connections betweem gratings 
     if(stage != 0):
-
         rg = round( (numElements * 2) / divisor)
         for i in range( rg ):
             if(i % 2 == 0):

@@ -16,7 +16,7 @@
  </categories>
  <cells>
   <cell>
-   <name>Power Division</name>
+   <name>Power Division0</name>
    <variant/>
    <layout-name/>
    <references>
@@ -27,15 +27,15 @@
   <item>
    <tags/>
    <category>'o2 - o1'</category>
-   <cell>Power Division</cell>
+   <cell>Power Division0</cell>
    <visited>false</visited>
    <multiplicity>1</multiplicity>
    <comment/>
    <image/>
    <values>
-    <value>text: 'Error while trying to place route from o2 to o1 at points (dbu): [632700,77520, 642700,77520, 642700,111375, 990000,111375, 990000,81375, 1000000,81375]'</value>
-    <value>text: 'Exception: distance between points 632700,77520 and 642700,77520 is too small to safely place bends pt.to_s()=\'642700,77520\', old_pt.to_s()=\'632700,77520\', pt.distance(old_pt)=10000.0 &lt; b90r=15000'</value>
-    <value>polygon: (632.7,77.295;632.7,77.745;642.475,77.745;642.475,111.6;990.225,111.6;990.225,81.6;1000,81.6;1000,81.15;989.775,81.15;989.775,111.15;642.925,111.15;642.925,77.295)</value>
+    <value>text: 'Error while trying to place route from o2 to o1 at points (dbu): [922700,32770, 952700,32770, 952700,66320, 970000,66320, 970000,34320, 1000000,34320]'</value>
+    <value>text: 'Exception: distance between points 952700,66320 and 970000,66320 is too small to safely place bends pt=970000,66320, old_pt=952700,66320, pt.distance(old_pt)=17300.0 &lt; 2 * b90r=20000'</value>
+    <value>polygon: (922.7,32.545;922.7,32.995;952.475,32.995;952.475,66.545;970.225,66.545;970.225,34.545;1000,34.545;1000,34.095;969.775,34.095;969.775,66.095;952.925,66.095;952.925,32.545)</value>
    </values>
   </item>
  </items>

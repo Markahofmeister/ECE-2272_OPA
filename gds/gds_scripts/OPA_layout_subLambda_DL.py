@@ -15,6 +15,14 @@ die_height = 3000.0                      # um
 splitter_Xsep = 120                      # X separation between splitter stages, um
 xMargin = 200                            # distance from x boundary to place elements, um
 yMargin = 200
+splitter_Xsep = 130
+
+deltaLSpacing = 10                        # um
+xBuff = 20                               # Minimum straight leaving/entering port    
+
+radiatorFeed_Xsep = (( (2 * xBuff) + ((numElements + 1) * deltaLSpacing) ) * 2 ) + 0                 # X separation between splitter stages, um
+xMargin = 500                            # distance from x boundary to place elements, um
+yMargin = 200
 bendRad_min = 10
 
 # Max. separation between outer radiating elementsa
@@ -28,11 +36,9 @@ duplicate = True
 
 # DERIVED FROM Cornerstone grating coupler "SOI220nm_1550nm_TE_RIB_Grating_Coupler"
 @gf.cell
-def gc_cornerstone_pdk_subLambda_noEtch(width_grating: float = 1.55, period: float = 0.67) -> gf.Component:
-
-    l1 = l2 = period / 2
-    gc = gf.components.dbr(w1 = 0.45, w2 = width_grating, l1 = l1, l2 = l2, n=60, cross_section='cornerstone_rib')
-
+def gc_cornerstone_pdk_subLambda(width_grating: float = 1.55) -> gf.Component:
+    gc = pdk.grating_coupler_rectangular(n_periods=60, period=0.67, fill_factor=0.5, 
+                                         length_taper=10, width_grating=width_grating, layer_slab=None, layer_grating=(3,0), cross_section=xs)
     return gc
 
 
@@ -52,13 +58,13 @@ if(duplicate):
     top = gf.Component('TOP')
 
     numCopies = 3
+    deltaLScalars = [0.33, 0.66, 1]
 
-    gratingWidths = [1.0, 1.5, 2.0]
-    gratingPeriods = [0.67] * numCopies
+    gratingWidth = 1.0
 
     for copy in range(numCopies):
 
-        gc = gc_cornerstone_pdk_subLambda_noEtch(width_grating=gratingWidths[copy], period = gratingPeriods[copy])
+        gc = gc_cornerstone_pdk_subLambda(width_grating=gratingWidth)
 
         OPATemp = gf.Component("OPA_subL" + str(copy))
 
@@ -86,6 +92,7 @@ if(duplicate):
         splitters = []
 
         # Generate, place, and route N = log2(numElements) MMI splitters 
+        stage = 0
         for stage in range( numStages ):
 
             temp_splitters = []
@@ -96,39 +103,76 @@ if(duplicate):
             for i in range( round( numElements / divisor ) ):
 
                 temp_splitters.insert(i, pdiv << mmi1x2)
-                temp_splitters[i].movex( (die_width / 2) - xMargin - (splitter_Xsep * (stage + 1)) )
+                if(stage == 0):
+                    temp_splitters[i].movex( (die_width / 2) - xMargin - (radiatorFeed_Xsep * (stage + 1)) )
+                else:
+                    # temp_splitters[i].movex( (die_width / 2) - xMargin - (radiatorFeed_Xsep * (stage)) - radiatorFeed_Xsep)
+                    temp_splitters[i].movex( splitters[0][0].ports['o1'].center[0] - ((splitter_Xsep + splitters[0][0].xsize) * stage))                
                 temp_splitters[i].movey( (ysepMax / 2) - ((divisor-1) * (elementSeparation / 2)) - (elementSeparation * i * divisor) )
 
             # Add stage M of splitters to master MMI splitter list 
             splitters.append(temp_splitters)
 
             # If we are not on the stage that connects to the bragg gratings, 
-            # draw the connections betweem gratings 
+            # draw the connections between gratings 
             if(stage != 0):
                 rg = round( (numElements * 2) / divisor)
                 for i in range( rg ):
                     if(i % 2 == 0):
+                        pass
                         gf.routing.route_dubin(pdiv, port1=splitters[stage][int(i/2)].ports['o2'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs)
                     else:
+                        pass
                         gf.routing.route_dubin(pdiv, port1=splitters[stage][int(i/2)].ports['o3'], port2=splitters[stage-1][i].ports['o1'], cross_section=xs)
                     
 
         OPATemp << pdiv
 
         # Route final splitter stage to radiating elements 
+
+        dxMaxDiff = radiatingElements[0].ports['o1'].center[0] - splitters[0][int(0)].ports['o2'].center[0]
+        yOffset = 30
+        gcPortInDiffY = radiatingElements[0].ports['o1'].center[1] - radiatingElements[1].ports['o1'].center[1]
+        mmiPortOutDiffY = splitters[0][0].ports['o2'].center[1] - splitters[0][0].ports['o3'].center[1]
+        elementYdiffOffset = gcPortInDiffY - mmiPortOutDiffY
+
         for j in range(numElements):
             
             if(j % 2 == 0):
-                gf.routing.route_dubin(OPATemp, port1=splitters[0][int(j/2)].ports['o2'], port2=radiatingElements[j].ports['o1'], cross_section=xs)
+                    
+                xDist = dxMaxDiff - (xBuff * (j+1))
+                yChange = yOffset + j*deltaLScalars[copy]
+                splitterCurr = splitters[0][int(j/2)].ports['o2'].center
+                radiatorCurr = radiatingElements[j].ports['o1'].center
+                dyDiff = radiatorCurr[1] - splitterCurr[1]
+                dxDiff = radiatorCurr[0] - splitterCurr[0]
+                route = gf.routing.route_single(pdiv, port1=splitters[0][int(j/2)].ports['o2'], port2=radiatingElements[j].ports['o1'], cross_section=xs, radius=10.0,
+                                                steps=[{"dx": (xBuff/2) * (j+1)},
+                                                    {"dy": dyDiff + yChange},
+                                                    {"dx":  xDist},
+                                                    {"dy": -yChange}
+                                                    ])
+
             else:
-                gf.routing.route_dubin(OPATemp, port1=splitters[0][int(j/2)].ports['o3'], port2=radiatingElements[j].ports['o1'], cross_section=xs)
+
+                xDist = dxMaxDiff - (xBuff * (j+1))
+                yChange = (yOffset + j*deltaLScalars[copy]) + (elementYdiffOffset / 2)
+                splitterCurr = splitters[0][int(j/2)].ports['o3'].center
+                radiatorCurr = radiatingElements[j].ports['o1'].center
+                dyDiff = radiatorCurr[1] - splitterCurr[1]
+                dxDiff = radiatorCurr[0] - splitterCurr[0]
+                route = gf.routing.route_single(pdiv, port1=splitters[0][int(j/2)].ports['o3'], port2=radiatingElements[j].ports['o1'], cross_section=xs, radius=10.0,
+                                                steps=[{"dx": (xBuff/2) * (j+1)},
+                                                    {"dy": dyDiff + yChange},
+                                                    {"dx": xDist},
+                                                    {"dy": -yChange}
+                                                    ])
 
 
 
         # Input Grating Coupler
         gIn = gf.Component('gratingIn' + str(copy))
 
-        # Position Input Grating Coupler
         # Position Input Grating Coupler
         gratingIn = gIn << fgc
         mov =  OPATemp.xmax  - OPATemp.xsize - 50
@@ -159,7 +203,7 @@ if(duplicate):
         OPAIntermediate = gf.Component("Intermediate" + str(copy))
         OPAIntermediate << OPATemp
 
-        OPAIntermediate.movey(400 * copy)
+        OPAIntermediate.movey(1000 * copy)
 
         # Add OPA to top level cell
         top << OPAIntermediate
@@ -184,7 +228,7 @@ if(duplicate):
 
 else:
 
-    gc = gc_cornerstone_pdk_subLambda_noEtch(width_grating=1.0, period=0.67)
+    gc = gc_cornerstone_pdk_subLambda(width_grating=1.0)
 
     # top cell
     top = gf.Component('TOP')
