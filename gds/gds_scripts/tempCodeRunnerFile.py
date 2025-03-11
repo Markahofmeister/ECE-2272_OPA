@@ -1,2 +1,2 @@
 
-# Max. separation between outer radiating elementsa
+die_height = 3000.0                      # um
