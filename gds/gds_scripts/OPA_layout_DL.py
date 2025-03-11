@@ -119,14 +119,37 @@ splitterCurr2 = splitterCurr2Port.center
 print(splitterCurr1)
 print(splitterCurr2)
 dyDiff = splitterCurr2[1] - splitterCurr1[1]
+dxDiff = splitterCurr2[0] - splitterCurr1[0]
+print(dxDiff)
 offset = 30
 
 gf.routing.route_single(pdiv, port1=splitters[1][int(0)].ports['o2'], port2=splitters[0][0].ports['o1'], cross_section=xs, radius=10.0,
-                                    steps=[{"dx": 20},
+                                    steps=[{"dx": 10},
                                            {"dy": dyDiff + offset},
                                            {"dx": 40},
                                            {"dy": -offset}
                                              ])
+
+
+splitterCurr1Port = splitters[1][0].ports['o3']
+splitterCurr2Port = splitters[0][1].ports['o1']
+splitterCurr1 = splitterCurr1Port.center
+splitterCurr2 = splitterCurr2Port.center
+print(splitterCurr1)
+print(splitterCurr2)
+dyDiff = splitterCurr2[1] - splitterCurr1[1]
+dxDiff = splitterCurr2[0] - splitterCurr1[0]
+print(dxDiff)
+offset = 30
+
+gf.routing.route_single(pdiv, port1=splitters[1][int(0)].ports['o3'], port2=splitters[0][1].ports['o1'], cross_section=xs, radius=10.0,
+                                    steps=[{"dx": 15},
+                                           {"dy": dyDiff + offset},
+                                           {"dx": 32},
+                                           {"dy": -offset}
+                                             ])
+
+
 
             
 
