@@ -1,0 +1,59 @@
+switchtolayout; closeall; deleteall; c
+
+n = gdsimport("C:/Users/marka/Spring-2025/Silicon-Photonics/project/ECE-2722_OPA/build/gds/OPA_layout_Mk-II.gds", "OPA", 3, "Si (Silicon) - Palik", 0, 220e-9);
+
+# simplify variable names by removing spaces
+x_span = 70;
+y_span = 250;
+z_span = 10;
+
+select("z1");
+set("x",0);
+set("x span",x_span);
+set("y",0);
+set("y span",y_span);
+set("z",-z_span/2);
+
+select("z2");
+set("x",0);
+set("x span",x_span);
+set("y",0);
+set("y span",y_span);
+set("z",z_span/2);
+
+select("x1");
+set("x",-x_span/2);
+set("y",0);
+set("y span",y_span);
+set("z",0);
+set("z span",z_span);
+
+select("x2");
+set("x",x_span/2);
+set("y",0);
+set("y span",y_span);
+set("z",0);
+set("z span",z_span);
+
+select("y1");
+set("x",0);
+set("x span",x_span);
+set("y",-y_span/2);
+set("z",0);
+set("z span",z_span);
+
+select("y2");
+set("x",0);
+set("x span",x_span);
+set("y",y_span/2);
+set("z",0);
+set("z span",z_span);
+
+select("index");
+set("x",x_span/2);
+set("y",y_span/2);
+set("z",0);
+set("x span",0);
+set("y span",0);
+set("z span",0);
+

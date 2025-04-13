@@ -1,4 +1,3 @@
-#new(1);
 switchtolayout; deleteall; clear; closeall;
 
 # define wafer and waveguide structure
@@ -9,7 +8,6 @@ thick_etch = 120e-9;        # etching depth in Si
 thick_TOX = 1.0e-6;         # top oxide thickness 
 
 width_ridge = 220e-9;
-
 
 # define materials
 material_Si = "Si (Silicon) - Palik";

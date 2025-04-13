@@ -83,6 +83,7 @@ set("number of trial modes",modes);
 
 # START SWEEP PORTION
 
+# wide_Si_list = 0.4e-6 : 0.01e-6 : 0.5e-6; # sweep waveguide thickness 
 wide_Si_list = 0.45e-6; # sweep waveguide thickness 
 mode_list=[1:4];
 
