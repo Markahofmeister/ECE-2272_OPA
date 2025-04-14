@@ -1,0 +1,10 @@
+switchtolayout; closeall; deleteall; clc;
+
+n = gdsimport("C:/Users/marka/Spring-2025/Silicon-Photonics/project/ECE-2722_OPA/build/gds/OPA_layout_Mk-II.gds", "gc_cornerstone_pdk", 3, "Si (Silicon) - Palik", 0, 220e-9);
+
+x_span = 70;
+y_span = 250;
+z_span = 10;
+
+
+
